@@ -47,8 +47,8 @@ with mp_hands.Hands(
 			y = results.multi_hand_landmarks[0].landmark[mp_hands.HandLandmark.INDEX_FINGER_TIP].y
 			z = results.multi_hand_landmarks[0].landmark[mp_hands.HandLandmark.INDEX_FINGER_TIP].z
 			#print(x,y,z);
-			fpos[5] = x*-80
-			fpos[4] = y*80
+			fpos[5] = x*-110
+			fpos[4] = y*120
 			msg = farr_to_barr(fpos)
 			ser.write(msg)
 
