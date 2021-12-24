@@ -1,5 +1,13 @@
 import cv2
 import mediapipe as mp
+import serial
+from abh_api_core import farr_to_barr
+
+
+ser = serial.Serial('COM3','460800', timeout = 1)
+
+fpos = [15., 15., 15., 15., 15., -15.]
+
 mp_drawing = mp.solutions.drawing_utils
 mp_drawing_styles = mp.solutions.drawing_styles
 mp_hands = mp.solutions.hands
@@ -38,10 +46,18 @@ with mp_hands.Hands(
 			x = results.multi_hand_landmarks[0].landmark[mp_hands.HandLandmark.INDEX_FINGER_TIP].x
 			y = results.multi_hand_landmarks[0].landmark[mp_hands.HandLandmark.INDEX_FINGER_TIP].y
 			z = results.multi_hand_landmarks[0].landmark[mp_hands.HandLandmark.INDEX_FINGER_TIP].z
-			print(x,y,z);
+			#print(x,y,z);
+			fpos[5] = x*-80
+			fpos[4] = y*80
+			msg = farr_to_barr(fpos)
+			ser.write(msg)
+
+
 			
 		# Flip the image horizontally for a selfie-view display.
 		cv2.imshow('MediaPipe Hands', cv2.flip(image, 1))
 		if cv2.waitKey(5) & 0xFF == 27:
 			break
+
 cap.release()
+ser.close()
