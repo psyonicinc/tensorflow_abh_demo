@@ -16,7 +16,11 @@ for fp in fpos:
 	for b in b4:
 		barr.append(b)
 # last step: calculate the checksum and load it into the final byte
-
+sum = 0
+for b in barr:
+	sum = sum + b
+chksum = (-sum) & 0xFF;
+barr.append(chksum)
 
 
 print(barr)
