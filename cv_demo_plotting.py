@@ -1,6 +1,7 @@
 import cv2
 import mediapipe as mp
 import time
+import numpy as np
 from matplotlib import animation
 from matplotlib import pyplot as plt
 
@@ -30,6 +31,12 @@ def init(): # required for blitting to give a clean slate.
 	for line in lines:
 		line.set_data([],[])
 	return lines
+
+def dist(v1,v2):
+	return np.sqrt((v1.x-v2.x)**2 + (v1.y-v2.y)**2 + (v1.z-v2.z)**2)
+
+def to_vect(v):
+	return np.array([v.x, v.y, v.z])
 	
 def runcv():
 	# For webcam input:
@@ -70,11 +77,33 @@ def runcv():
 			if results.multi_hand_landmarks:
 									
 				t = time.time()
-				v = results.multi_hand_landmarks[0].landmark[mp_hands.HandLandmark.INDEX_FINGER_TIP]
-				x = v.x
-				y = v.y
-				z = v.z 
-				yield t, x, y
+				
+				#get scale. scale is equal to the distance (in 0-1 generalized pixel coordinates) 
+				# between the base/wrist position and the MCP position of the index finger
+				# we use scale to make mapped hand positions robust to relative pixel distances
+				base = results.multi_hand_landmarks[0].landmark[mp_hands.HandLandmark.WRIST]
+				index_mcp = results.multi_hand_landmarks[0].landmark[mp_hands.HandLandmark.INDEX_FINGER_MCP]
+				scale = dist(base,index_mcp)
+				
+				#obtain index mcp angle
+				index_tip = results.multi_hand_landmarks[0].landmark[mp_hands.HandLandmark.INDEX_FINGER_TIP]
+				norm_idx_mcp = dist(index_tip,index_mcp)/scale
+				fpos[0] = norm_idx_mcp
+				
+				thumb_tip = to_vect(results.multi_hand_landmarks[0].landmark[mp_hands.HandLandmark.THUMB_TIP])
+				thumb_cmc = to_vect(results.multi_hand_landmarks[0].landmark[mp_hands.HandLandmark.THUMB_CMC])
+				base = to_vect(base)
+				index_mcp = to_vect(index_mcp)
+				thumb_vect = np.subtract(thumb_tip, base)
+				thumb_vx = np.subtract(thumb_cmc, base)
+				thumb_vy = np.subtract(index_mcp, base)
+				
+				fpos[5] = np.dot(thumb_vect, thumb_vx)
+				fpos[4] = np.dot(thumb_vect, thumb_vy)
+				
+				
+				yield t, scale, fpos[0]
+				
 
 				#for hand_landmarks in results.multi_hand_landmarks:
 				hand_landmarks = results.multi_hand_landmarks[0]
