@@ -4,6 +4,7 @@ import time
 import numpy as np
 from matplotlib import animation
 from matplotlib import pyplot as plt
+from ht_matrix import *
 
 mp_drawing = mp.solutions.drawing_utils
 mp_drawing_styles = mp.solutions.drawing_styles
@@ -97,7 +98,11 @@ def runcv():
 				hw_b[0:3, 3] = base
 				hw_b[3, 0:4] = np.array([0,0,0,1])
 				
+                hb_w = ht_inverse(hw_b)
+                base4 = v3_to_v4(base)
 				
+                base_in_base = hb_w.dot(base4)
+                
 				#get scale. scale is equal to the distance (in 0-1 generalized pixel coordinates) 
 				# between the base/wrist position and the MCP position of the index finger
 				# we use scale to make mapped hand positions robust to relative pixel distances
@@ -122,7 +127,7 @@ def runcv():
 				fpos[4] = np.dot(thumb_vect, thumb_vy)*90+15
 				
 				
-				yield t, scale, hw_b[0,3], hw_b[1,3], hw_b[2,3]
+				yield t, scale, base_in_base[0,3], base_in_base[1,3], base_in_base[2,3]
 				
 
 				#for hand_landmarks in results.multi_hand_landmarks:
