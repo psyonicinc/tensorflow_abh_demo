@@ -10,7 +10,11 @@ mp_drawing = mp.solutions.drawing_utils
 mp_drawing_styles = mp.solutions.drawing_styles
 mp_hands = mp.solutions.hands
 
+
+
+
 fig,ax = plt.subplots()
+plt.setp(ax,ylim = (-10,10))
 
 bufwidth = 100
 num_lines = 4
@@ -24,9 +28,9 @@ for i in range(num_lines):
 	ybuf.append([])
 
 for i in range(0, num_lines):	
-    for j in range(0,bufwidth):
-        xbuf[i].append(0)
-        ybuf[i].append(0)
+	for j in range(0,bufwidth):
+		xbuf[i].append(0)
+		ybuf[i].append(0)
 
 def init(): # required for blitting to give a clean slate.
 	for line in lines:
@@ -77,11 +81,26 @@ def runcv():
 				t = time.time()
 
 				base = to_vect(results.multi_hand_landmarks[0].landmark[mp_hands.HandLandmark.WRIST])
+				
 				index_mcp = to_vect(results.multi_hand_landmarks[0].landmark[mp_hands.HandLandmark.INDEX_FINGER_MCP])
+				middle_mcp = to_vect(results.multi_hand_landmarks[0].landmark[mp_hands.HandLandmark.MIDDLE_FINGER_MCP])
+				ring_mcp = to_vect(results.multi_hand_landmarks[0].landmark[mp_hands.HandLandmark.RING_FINGER_MCP])
+				pinky_mcp = to_vect(results.multi_hand_landmarks[0].landmark[mp_hands.HandLandmark.PINKY_MCP])
+								
 				index_tip = to_vect(results.multi_hand_landmarks[0].landmark[mp_hands.HandLandmark.INDEX_FINGER_TIP])
 				thumb_tip = to_vect(results.multi_hand_landmarks[0].landmark[mp_hands.HandLandmark.THUMB_TIP])
 				thumb_cmc = to_vect(results.multi_hand_landmarks[0].landmark[mp_hands.HandLandmark.THUMB_CMC])
-				
+			
+				#get scale. scale is equal to the distance (in 0-1 generalized pixel coordinates) 
+				# between the base/wrist position and the MCP position of the index finger
+				# we use scale to make mapped hand positions robust to relative pixel distances
+				#b2idx_mcp = np.subtract(index_mcp, base)
+				#scale = np.sqrt(b2idx_mcp.dot(b2idx_mcp))
+				v1 = np.subtract(index_mcp, middle_mcp)
+				v2 = np.subtract(middle_mcp, ring_mcp)
+				v3 = np.subtract(ring_mcp, pinky_mcp)
+				scale = (np.sqrt(v1.dot(v1)) + np.sqrt(v2.dot(v2)) + np.sqrt(v3.dot(v3)))/3
+			
 				hw_b = np.zeros((4,4))
 				vx = np.subtract(index_mcp, base)
 				vx = vx/np.sqrt(vx.dot(vx))				
@@ -97,39 +116,19 @@ def runcv():
 				hw_b[0:3, 2] = vz
 				hw_b[0:3, 3] = base
 				hw_b[3, 0:4] = np.array([0,0,0,1])
+				hb_w = ht_inverse(hw_b)
 				
-                hb_w = ht_inverse(hw_b)
-                base4 = v3_to_v4(base)
-				
-                base_in_base = hb_w.dot(base4)
-                
-				#get scale. scale is equal to the distance (in 0-1 generalized pixel coordinates) 
-				# between the base/wrist position and the MCP position of the index finger
-				# we use scale to make mapped hand positions robust to relative pixel distances
-				b2idx_mcp = np.subtract(index_mcp, base)
-				scale = np.sqrt(b2idx_mcp.dot(b2idx_mcp))
-				
+							
 				#obtain index mcp angle
 				mcp2tip = np.subtract(index_tip,index_mcp)
 				norm_idx_mcp = np.sqrt(mcp2tip.dot(mcp2tip))/scale
 				fpos[0] = norm_idx_mcp*90+15
 				
 				
+				thumb_tip_b = hb_w.dot(v3_to_v4(thumb_tip))/scale				
 				
-				thumb_vect = np.subtract(thumb_tip, base)/scale
-				
-				thumb_vx = np.subtract(thumb_cmc, base)
-				thumb_vx = thumb_vx / np.sqrt(thumb_vx.dot(thumb_vx))
-				thumb_vy = np.subtract(index_mcp, base)
-				thumb_vy = thumb_vy / np.sqrt(thumb_vy.dot(thumb_vy))
-				
-				fpos[5] = np.dot(thumb_vect, thumb_vx)*90+15
-				fpos[4] = np.dot(thumb_vect, thumb_vy)*90+15
-				
-				
-				yield t, scale, base_in_base[0,3], base_in_base[1,3], base_in_base[2,3]
-				
-
+				yield t, scale, thumb_tip_b[0], thumb_tip_b[1], thumb_tip_b[2]
+								
 				#for hand_landmarks in results.multi_hand_landmarks:
 				hand_landmarks = results.multi_hand_landmarks[0]
 				mp_drawing.draw_landmarks(
@@ -162,10 +161,11 @@ def animate(args):
 	ybuf[2].append(args[3])
 	ybuf[3].append(args[4])
 	ax.relim()
-	ax.autoscale_view()
+	ax.autoscale_view(scalex=True, scaley=False)
 	for i, line in enumerate(lines):
 		line.set_data(xbuf[i],ybuf[i])
 	return lines
 	
 anim = animation.FuncAnimation(fig, animate, init_func=init, frames=runcv, interval=0, blit=True,  save_count = 50)
+ax.legend(['scale','x','y','z'])
 plt.show()
