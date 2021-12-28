@@ -74,23 +74,41 @@ def runcv():
 			if results.multi_hand_landmarks:
 									
 				t = time.time()
+
+				base = to_vect(results.multi_hand_landmarks[0].landmark[mp_hands.HandLandmark.WRIST])
+				index_mcp = to_vect(results.multi_hand_landmarks[0].landmark[mp_hands.HandLandmark.INDEX_FINGER_MCP])
+				index_tip = to_vect(results.multi_hand_landmarks[0].landmark[mp_hands.HandLandmark.INDEX_FINGER_TIP])
+				thumb_tip = to_vect(results.multi_hand_landmarks[0].landmark[mp_hands.HandLandmark.THUMB_TIP])
+				thumb_cmc = to_vect(results.multi_hand_landmarks[0].landmark[mp_hands.HandLandmark.THUMB_CMC])
+				
+				hw_b = np.zeros((4,4))
+				vx = np.subtract(index_mcp, base)
+				vx = vx/np.sqrt(vx.dot(vx))				
+				vyref = np.subtract(thumb_cmc,base)
+				vyref = vyref/np.sqrt(vyref.dot(vyref))
+				vz = np.cross(vx, vyref)
+				vz = vz/np.sqrt(vz.dot(vz))
+				vy = np.cross(vz, vx)
+				vy = vy/np.sqrt(vy.dot(vy))
+
+				hw_b[0:3, 0] = vx
+				hw_b[0:3, 1] = vy
+				hw_b[0:3, 2] = vz
+				hw_b[0:3, 3] = base
+				hw_b[3, 0:4] = np.array([0,0,0,1])
+				
 				
 				#get scale. scale is equal to the distance (in 0-1 generalized pixel coordinates) 
 				# between the base/wrist position and the MCP position of the index finger
 				# we use scale to make mapped hand positions robust to relative pixel distances
-				base = to_vect(results.multi_hand_landmarks[0].landmark[mp_hands.HandLandmark.WRIST])
-				index_mcp = to_vect(results.multi_hand_landmarks[0].landmark[mp_hands.HandLandmark.INDEX_FINGER_MCP])
 				b2idx_mcp = np.subtract(index_mcp, base)
 				scale = np.sqrt(b2idx_mcp.dot(b2idx_mcp))
 				
 				#obtain index mcp angle
-				index_tip = to_vect(results.multi_hand_landmarks[0].landmark[mp_hands.HandLandmark.INDEX_FINGER_TIP])
 				mcp2tip = np.subtract(index_tip,index_mcp)
 				norm_idx_mcp = np.sqrt(mcp2tip.dot(mcp2tip))/scale
 				fpos[0] = norm_idx_mcp*90+15
 				
-				thumb_tip = to_vect(results.multi_hand_landmarks[0].landmark[mp_hands.HandLandmark.THUMB_TIP])
-				thumb_cmc = to_vect(results.multi_hand_landmarks[0].landmark[mp_hands.HandLandmark.THUMB_CMC])
 				
 				
 				thumb_vect = np.subtract(thumb_tip, base)/scale
@@ -104,7 +122,7 @@ def runcv():
 				fpos[4] = np.dot(thumb_vect, thumb_vy)*90+15
 				
 				
-				yield t, scale, fpos[0], fpos[4], fpos[5]
+				yield t, scale, hw_b[0,3], hw_b[1,3], hw_b[2,3]
 				
 
 				#for hand_landmarks in results.multi_hand_landmarks:
