@@ -12,7 +12,7 @@ mp_hands = mp.solutions.hands
 fig,ax = plt.subplots()
 
 bufwidth = 100
-num_lines = 2
+num_lines = 4
 lines = []
 xbuf = []
 ybuf = []
@@ -31,9 +31,6 @@ def init(): # required for blitting to give a clean slate.
 	for line in lines:
 		line.set_data([],[])
 	return lines
-
-def dist(v1,v2):
-	return np.sqrt((v1.x-v2.x)**2 + (v1.y-v2.y)**2 + (v1.z-v2.z)**2)
 
 def to_vect(v):
 	return np.array([v.x, v.y, v.z])
@@ -81,28 +78,33 @@ def runcv():
 				#get scale. scale is equal to the distance (in 0-1 generalized pixel coordinates) 
 				# between the base/wrist position and the MCP position of the index finger
 				# we use scale to make mapped hand positions robust to relative pixel distances
-				base = results.multi_hand_landmarks[0].landmark[mp_hands.HandLandmark.WRIST]
-				index_mcp = results.multi_hand_landmarks[0].landmark[mp_hands.HandLandmark.INDEX_FINGER_MCP]
-				scale = dist(base,index_mcp)
+				base = to_vect(results.multi_hand_landmarks[0].landmark[mp_hands.HandLandmark.WRIST])
+				index_mcp = to_vect(results.multi_hand_landmarks[0].landmark[mp_hands.HandLandmark.INDEX_FINGER_MCP])
+				b2idx_mcp = np.subtract(index_mcp, base)
+				scale = np.sqrt(b2idx_mcp.dot(b2idx_mcp))
 				
 				#obtain index mcp angle
-				index_tip = results.multi_hand_landmarks[0].landmark[mp_hands.HandLandmark.INDEX_FINGER_TIP]
-				norm_idx_mcp = dist(index_tip,index_mcp)/scale
-				fpos[0] = norm_idx_mcp
+				index_tip = to_vect(results.multi_hand_landmarks[0].landmark[mp_hands.HandLandmark.INDEX_FINGER_TIP])
+				mcp2tip = np.subtract(index_tip,index_mcp)
+				norm_idx_mcp = np.sqrt(mcp2tip.dot(mcp2tip))/scale
+				fpos[0] = norm_idx_mcp*90+15
 				
 				thumb_tip = to_vect(results.multi_hand_landmarks[0].landmark[mp_hands.HandLandmark.THUMB_TIP])
 				thumb_cmc = to_vect(results.multi_hand_landmarks[0].landmark[mp_hands.HandLandmark.THUMB_CMC])
-				base = to_vect(base)
-				index_mcp = to_vect(index_mcp)
-				thumb_vect = np.subtract(thumb_tip, base)
+				
+				
+				thumb_vect = np.subtract(thumb_tip, base)/scale
+				
 				thumb_vx = np.subtract(thumb_cmc, base)
+				thumb_vx = thumb_vx / np.sqrt(thumb_vx.dot(thumb_vx))
 				thumb_vy = np.subtract(index_mcp, base)
+				thumb_vy = thumb_vy / np.sqrt(thumb_vy.dot(thumb_vy))
 				
-				fpos[5] = np.dot(thumb_vect, thumb_vx)
-				fpos[4] = np.dot(thumb_vect, thumb_vy)
+				fpos[5] = np.dot(thumb_vect, thumb_vx)*90+15
+				fpos[4] = np.dot(thumb_vect, thumb_vy)*90+15
 				
 				
-				yield t, scale, fpos[0]
+				yield t, scale, fpos[0], fpos[4], fpos[5]
 				
 
 				#for hand_landmarks in results.multi_hand_landmarks:
@@ -134,6 +136,8 @@ def animate(args):
 		xbuf[i].append(args[0])
 	ybuf[0].append(args[1])
 	ybuf[1].append(args[2])
+	ybuf[2].append(args[3])
+	ybuf[3].append(args[4])
 	ax.relim()
 	ax.autoscale_view()
 	for i, line in enumerate(lines):
