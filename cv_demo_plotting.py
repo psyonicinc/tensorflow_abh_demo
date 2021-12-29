@@ -139,16 +139,20 @@ def runcv():
 				ang_tr = np.arctan2(-thumb_tip_b[2],-thumb_tip_b[1])
 				ang_tf = np.arctan2(thumb_tip_b[2],-thumb_tip_b[0])
 				
-				fpos[5] = (ang_tr - (-.8))*((-100-(-15))/(-2.4-(-.8)))
-				fpos[5] = clamp(fpos[5], -100,-5)
-				fpos[4] = (ang_tf-2.2)*((80-15)/(2.9-2.2))
-				fpos[4] = clamp(fpos[4],10,90)
+				max_tr = -5
+				min_tr = -100
+				max_tr_rad = -.8
+				min_tr_rad = -2.4
+				fpos[5] = (ang_tr - max_tr_rad)*((min_tr-max_tr)/(min_tr_rad-max_tr_rad))
+				fpos[5] = clamp(fpos[5], min_tr,max_tr)
 				
-				neutral_thumb_b = np.array([4.16,-1.67,2.47,1])*scale
-				neutral_thumb_b[3] = 1	#remove scaling that was applied to the immutable '1'
+				max_tf = 90
+				min_tf = 10
+				max_tf_rad = 2.9
+				min_tf_rad = 2.2
+				fpos[4] = (ang_tf-min_tf_rad)*((max_tf-min_tf)/(max_tf_rad-min_tf_rad))
+				fpos[4] = clamp(fpos[4],min_tf,max_tf)
 				
-				
-				 
 				print (fpos[4], fpos[5])
 				yield t, scale, fpos[0], fpos[5], fpos[4]
 								
@@ -161,9 +165,11 @@ def runcv():
 					mp_hands.HAND_CONNECTIONS,
 					mp_drawing_styles.get_default_hand_landmarks_style(),
 					mp_drawing_styles.get_default_hand_connections_style())
-				
-				
-				neutral_thumb_w = hw_b.dot(neutral_thumb_b)	#get dot position in world coordinates for a visual tag/reference				
+
+				#establish and render a static point in the base frame of the model
+				static_point_b = np.array([4.16, 1.05, 1.47,1])*scale	
+				static_point_b[3] = 1	#remove scaling that was applied to the immutable '1'
+				neutral_thumb_w = hw_b.dot(static_point_b)	#get dot position in world coordinates for a visual tag/reference				
 				l_list = landmark_pb2.NormalizedLandmarkList(
 					landmark = [
 						v4_to_landmark(neutral_thumb_w)
