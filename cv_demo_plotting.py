@@ -17,7 +17,7 @@ from scipy import signal
 		N must be 2 for this filter to be valid. N greater than 2 yields 2 sections, 
 		and we're only doing 1 section.
 """
-lpf_sos = signal.iirfilter(2, Wn=0.1, btype='lowpass', analog=False, ftype='butter', output='sos', fs=30)
+lpf_sos = signal.iirfilter(2, Wn=3, btype='lowpass', analog=False, ftype='butter', output='sos', fs=30)
 
 mp_drawing = mp.solutions.drawing_utils
 mp_drawing_styles = mp.solutions.drawing_styles
