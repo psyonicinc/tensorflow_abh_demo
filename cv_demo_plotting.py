@@ -7,6 +7,7 @@ from matplotlib import pyplot as plt
 from vect_tools import *
 from rtfilt import *
 from scipy import signal
+
 """
 	Design the low pass filter we will use on the angle outputs.
 	NOTE:
@@ -16,6 +17,10 @@ from scipy import signal
 		
 		N must be 2 for this filter to be valid. N greater than 2 yields 2 sections, 
 		and we're only doing 1 section.
+		
+	Higher values of Wn -> less aggressive filtering.
+	Lower values of Wn -> more aggressive filtering.
+	Wn must be greater than 0 and less than nyquist (Fs/2).
 """
 lpf_sos = signal.iirfilter(2, Wn=3, btype='lowpass', analog=False, ftype='butter', output='sos', fs=30)
 
