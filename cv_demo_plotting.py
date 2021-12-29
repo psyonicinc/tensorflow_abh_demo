@@ -12,12 +12,10 @@ mp_drawing_styles = mp.solutions.drawing_styles
 mp_hands = mp.solutions.hands
 
 
-
-
 fig,ax = plt.subplots()
 plt.setp(ax,ylim = (-100,100))
 bufwidth = 100
-num_lines = 4
+num_lines = 6
 lines = []
 xbuf = []
 ybuf = []
@@ -128,20 +126,29 @@ def runcv():
 				hw_b[0:3, 3] = base
 				hw_b[3, 0:4] = np.array([0,0,0,1])
 				hb_w = ht_inverse(hw_b)
+
+				fngs = [index_tip, middle_tip, ring_tip, pinky_tip]
+				mcps = [index_mcp, middle_mcp, ring_mcp, pinky_mcp]
+				for i in range(0,4): 
+					tip = fngs[i]
+					mcp = mcps[i]
+					#get index angle
+					tip_b = hb_w.dot(v3_to_v4(tip))/scale
+					tip_b[3] = 1
+					mcp_b = hb_w.dot(v3_to_v4(mcp))/scale
+					mcp_b[3] = 1
+					o_tip_b = np.subtract(tip_b[0:3], mcp_b[0:3])
+					ang = np.arctan2(o_tip_b[2],o_tip_b[0])
+					#map fingers
+					max_fng = 95
+					min_fng = 10
+					max_fng_rad = 2.85
+					min_fng_rad = .1
+					fpos[i] = (ang-min_fng_rad)*((max_fng-min_fng)/(max_fng_rad-min_fng_rad))
+					fpos[i] = clamp(fpos[i], min_fng, max_fng)
 				
-				#get index angle
-				idx_tip_b = hb_w.dot(v3_to_v4(index_tip))/scale
-				idx_tip_b[3] = 1
-				idx_mcp_b = hb_w.dot(v3_to_v4(index_mcp))/scale
-				idx_mcp_b[3] = 1
-				o_idx_tip_b = np.subtract(idx_tip_b[0:3], idx_mcp_b[0:3])
-				ang_idx = np.arctan2(o_idx_tip_b[2],o_idx_tip_b[0])
-				#map index
-				max_idx = 95
-				min_idx = 10
-				max_idx_rad = 2.85
-				min_idx_rad = .1
-				fpos[0] = (ang_idx-min_idx_rad)*((max_idx-min_idx)/(max_idx_rad-min_idx_rad))
+				
+				
 				
 				
 				#seed for thumb angles. this formula currently breaks for left hands,
@@ -159,17 +166,17 @@ def runcv():
 				fpos[5] = (ang_tr - max_tr_rad)*((min_tr-max_tr)/(min_tr_rad-max_tr_rad))
 				fpos[5] = clamp(fpos[5], min_tr,max_tr)
 				#map thumb rotator
-				max_tf = 90
+				max_tf = 110
 				min_tf = 10
-				max_tf_rad = 2.9
-				min_tf_rad = 2.2
+				max_tf_rad = 3.15
+				min_tf_rad = 2.5
 				fpos[4] = (ang_tf-min_tf_rad)*((max_tf-min_tf)/(max_tf_rad-min_tf_rad))
 				fpos[4] = clamp(fpos[4],min_tf,max_tf)
 				
 				
-				yield t, scale, fpos[0], fpos[5], fpos[4]
+				yield t, fpos[0], fpos[1], fpos[2], fpos[3], fpos[4], fpos[5]
 								
-					
+
 				#for hand_landmarks in results.multi_hand_landmarks:
 				hand_landmarks = results.multi_hand_landmarks[0]
 				mp_drawing.draw_landmarks(
@@ -203,7 +210,7 @@ def runcv():
 			if cv2.waitKey(5) & 0xFF == 27:
 				break
 			
-			#print (fps)
+			print (fps)
 			
 	cap.release()
 
@@ -219,6 +226,9 @@ def animate(args):
 	ybuf[1].append(args[2])
 	ybuf[2].append(args[3])
 	ybuf[3].append(args[4])
+	ybuf[4].append(args[5])
+	ybuf[5].append(args[6])
+
 	ax.relim()
 	ax.autoscale_view(scalex=True, scaley=False)
 	for i, line in enumerate(lines):
@@ -226,5 +236,5 @@ def animate(args):
 	return lines
 	
 anim = animation.FuncAnimation(fig, animate, init_func=init, frames=runcv, interval=0, blit=True,  save_count = 50)
-ax.legend(['scale','idx','tr','tf'])
+ax.legend(['idx','mid','rng','pnk','tf','tr'])
 plt.show()
