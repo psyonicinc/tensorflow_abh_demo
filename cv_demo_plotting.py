@@ -95,6 +95,10 @@ def runcv():
 				pinky_mcp = to_vect(results.multi_hand_landmarks[0].landmark[mp_hands.HandLandmark.PINKY_MCP])
 								
 				index_tip = to_vect(results.multi_hand_landmarks[0].landmark[mp_hands.HandLandmark.INDEX_FINGER_TIP])
+				middle_tip = to_vect(results.multi_hand_landmarks[0].landmark[mp_hands.HandLandmark.MIDDLE_FINGER_TIP])
+				ring_tip = to_vect(results.multi_hand_landmarks[0].landmark[mp_hands.HandLandmark.RING_FINGER_TIP])
+				pinky_tip = to_vect(results.multi_hand_landmarks[0].landmark[mp_hands.HandLandmark.PINKY_TIP])
+				
 				thumb_tip = to_vect(results.multi_hand_landmarks[0].landmark[mp_hands.HandLandmark.THUMB_TIP])
 				thumb_cmc = to_vect(results.multi_hand_landmarks[0].landmark[mp_hands.HandLandmark.THUMB_CMC])
 			
@@ -106,18 +110,18 @@ def runcv():
 				v1 = np.subtract(index_mcp, middle_mcp)
 				v2 = np.subtract(middle_mcp, ring_mcp)
 				v3 = np.subtract(ring_mcp, pinky_mcp)
-				scale = (np.sqrt(v1.dot(v1)) + np.sqrt(v2.dot(v2)) + np.sqrt(v3.dot(v3)))/3
-			
+				scale = (mag(v1) + mag(v2) + mag(v3))/3
+	
+				#obtain hw_b and hb_0
 				hw_b = np.zeros((4,4))
 				vx = np.subtract(index_mcp, base)
-				vx = vx/np.sqrt(vx.dot(vx))				
+				vx = vx/mag(vx)
 				vyref = np.subtract(pinky_mcp,base)
-				vyref = vyref/np.sqrt(vyref.dot(vyref))
+				vyref = vyref/mag(vyref)
 				vz = np.cross(vx, vyref)
-				vz = vz/np.sqrt(vz.dot(vz))
+				vz = vz/mag(vz)
 				vy = np.cross(vz, vx)
-				vy = vy/np.sqrt(vy.dot(vy))
-
+				vy = vy/mag(vy)
 				hw_b[0:3, 0] = vx
 				hw_b[0:3, 1] = vy
 				hw_b[0:3, 2] = vz
@@ -125,11 +129,20 @@ def runcv():
 				hw_b[3, 0:4] = np.array([0,0,0,1])
 				hb_w = ht_inverse(hw_b)
 				
-							
-				#obtain index mcp angle
-				mcp2tip = np.subtract(index_tip,index_mcp)
-				norm_idx_mcp = np.sqrt(mcp2tip.dot(mcp2tip))/scale
-				fpos[0] = norm_idx_mcp*90+15
+				#get index angle
+				idx_tip_b = hb_w.dot(v3_to_v4(index_tip))/scale
+				idx_tip_b[3] = 1
+				idx_mcp_b = hb_w.dot(v3_to_v4(index_mcp))/scale
+				idx_mcp_b[3] = 1
+				o_idx_tip_b = np.subtract(idx_tip_b[0:3], idx_mcp_b[0:3])
+				ang_idx = np.arctan2(o_idx_tip_b[2],o_idx_tip_b[0])
+				#map index
+				max_idx = 95
+				min_idx = 10
+				max_idx_rad = 2.85
+				min_idx_rad = .1
+				fpos[0] = (ang_idx-min_idx_rad)*((max_idx-min_idx)/(max_idx_rad-min_idx_rad))
+				
 				
 				#seed for thumb angles. this formula currently breaks for left hands,
 				#i.e. right hand only. Need some logic or generalized math for handling
@@ -138,14 +151,14 @@ def runcv():
 				thumb_tip_b[3] = 1
 				ang_tr = np.arctan2(-thumb_tip_b[2],-thumb_tip_b[1])
 				ang_tf = np.arctan2(thumb_tip_b[2],-thumb_tip_b[0])
-				
+				#mapthumb flexor
 				max_tr = -5
 				min_tr = -100
 				max_tr_rad = -.8
 				min_tr_rad = -2.4
 				fpos[5] = (ang_tr - max_tr_rad)*((min_tr-max_tr)/(min_tr_rad-max_tr_rad))
 				fpos[5] = clamp(fpos[5], min_tr,max_tr)
-				
+				#map thumb rotator
 				max_tf = 90
 				min_tf = 10
 				max_tf_rad = 2.9
@@ -153,7 +166,7 @@ def runcv():
 				fpos[4] = (ang_tf-min_tf_rad)*((max_tf-min_tf)/(max_tf_rad-min_tf_rad))
 				fpos[4] = clamp(fpos[4],min_tf,max_tf)
 				
-				print (fpos[4], fpos[5])
+				
 				yield t, scale, fpos[0], fpos[5], fpos[4]
 								
 					

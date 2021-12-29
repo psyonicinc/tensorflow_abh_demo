@@ -32,3 +32,6 @@ def clamp(val, lowerlim, upperlim):
 
 def mag(v):
 	return np.sqrt(v.dot(v))
+	
+def linmap(v, outmax,outmin, inmax,inmin):
+	return (v-inmin)*((outmax-outmin)/(inmax-inmin))
