@@ -73,9 +73,9 @@ def runcv():
 			# To improve performance, optionally mark the image as not writeable to
 			# pass by reference.
 			image.flags.writeable = False
+			
 			#image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-			
-			
+						
 			results = hands.process(image)
 			
 			
@@ -84,6 +84,13 @@ def runcv():
 			if results.multi_hand_landmarks:
 									
 				t = time.time()
+
+				#get the handedness
+				#index is 1/"Right", 0/"Left". This has something to do with the image being flipped, but we're just gonna flip the label association here
+				if(results.multi_handedness[0].classification[0].index == 1):	
+					handed_sign = 1 #1 for left, -1 for right. Apply to Z component when doing arctan2
+				else:
+					handed_sign = -1
 
 				base = to_vect(results.multi_hand_landmarks[0].landmark[mp_hands.HandLandmark.WRIST])
 				
@@ -126,7 +133,7 @@ def runcv():
 				hw_b[0:3, 3] = base
 				hw_b[3, 0:4] = np.array([0,0,0,1])
 				hb_w = ht_inverse(hw_b)
-
+				
 				fngs = [index_tip, middle_tip, ring_tip, pinky_tip]
 				mcps = [index_mcp, middle_mcp, ring_mcp, pinky_mcp]
 				for i in range(0,4): 
@@ -138,7 +145,7 @@ def runcv():
 					mcp_b = hb_w.dot(v3_to_v4(mcp))/scale
 					mcp_b[3] = 1
 					o_tip_b = np.subtract(tip_b[0:3], mcp_b[0:3])
-					ang = np.arctan2(o_tip_b[2],o_tip_b[0])
+					ang = np.arctan2(-handed_sign*o_tip_b[2],o_tip_b[0])
 					#map fingers
 					max_fng = 95
 					min_fng = 10
@@ -156,8 +163,8 @@ def runcv():
 				# the mirrored case
 				thumb_tip_b = hb_w.dot(v3_to_v4(thumb_tip))/scale		
 				thumb_tip_b[3] = 1
-				ang_tr = np.arctan2(-thumb_tip_b[2],-thumb_tip_b[1])
-				ang_tf = np.arctan2(thumb_tip_b[2],-thumb_tip_b[0])
+				ang_tr = np.arctan2(handed_sign*thumb_tip_b[2],-thumb_tip_b[1])
+				ang_tf = np.arctan2(-handed_sign*thumb_tip_b[2],-thumb_tip_b[0])
 				#mapthumb flexor
 				max_tr = -5
 				min_tr = -100
