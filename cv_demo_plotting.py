@@ -5,6 +5,19 @@ import numpy as np
 from matplotlib import animation
 from matplotlib import pyplot as plt
 from vect_tools import *
+from rtfilt import *
+from scipy import signal
+"""
+	Design the low pass filter we will use on the angle outputs.
+	NOTE:
+		1. fs is entered here. This is the estimated update frequency of our loop.
+			might not be accurate! depends on our actual FPS. Hz
+		2. Cutoff is entered here as Wn. Units are in Hz (bc. fs is in hz also)
+		
+		N must be 2 for this filter to be valid. N greater than 2 yields 2 sections, 
+		and we're only doing 1 section.
+"""
+lpf_sos = signal.iirfilter(2, Wn=0.1, btype='lowpass', analog=False, ftype='butter', output='sos', fs=30)
 
 mp_drawing = mp.solutions.drawing_utils
 mp_drawing_styles = mp.solutions.drawing_styles
@@ -44,6 +57,9 @@ def runcv():
 			
 		tprev = cv2.getTickCount()	
 		fpos = [15,15,15,15,15,-15]
+		warr = []
+		for f in fpos:
+			warr.append([0,0,0])
 		while cap.isOpened():
 		
 			ts = cv2.getTickCount()
@@ -161,6 +177,10 @@ def runcv():
 				min_tf_rad = 2.5
 				fpos[4] = (ang_tf-min_tf_rad)*((max_tf-min_tf)/(max_tf_rad-min_tf_rad))
 				fpos[4] = clamp(fpos[4],min_tf,max_tf)
+				
+				
+				for i in range(len(fpos)):
+					fpos[i], warr[i] = py_sos_iir(fpos[i], warr[i], lpf_sos[0])
 				
 				#expose values to the plotting code
 				yield t, fpos[0], fpos[1], fpos[2], fpos[3], fpos[4], fpos[5]
