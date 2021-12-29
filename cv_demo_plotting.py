@@ -4,6 +4,7 @@ import time
 import numpy as np
 from matplotlib import animation
 from matplotlib import pyplot as plt
+from mediapipe.framework.formats import landmark_pb2
 from ht_matrix import *
 
 mp_drawing = mp.solutions.drawing_utils
@@ -139,7 +140,26 @@ def runcv():
 					mp_hands.HAND_CONNECTIONS,
 					mp_drawing_styles.get_default_hand_landmarks_style(),
 					mp_drawing_styles.get_default_hand_connections_style())
-
+				
+						
+				lm = landmark_pb2.NormalizedLandmark()
+				lm.x = .5
+				lm.y = .5
+				lm.z = 0
+				l_list = landmark_pb2.NormalizedLandmarkList(
+					landmark = [
+						lm
+					]
+				)
+				mp_drawing.draw_landmarks(
+					image,
+					l_list,
+					[],
+					mp_drawing_styles.get_default_hand_landmarks_style(),
+					mp_drawing_styles.get_default_hand_connections_style())
+				
+					
+				
 			# Flip the image horizontally for a selfie-view display.
 			cv2.imshow('MediaPipe Hands', cv2.flip(image, 1))
 
