@@ -41,6 +41,13 @@ def init(): # required for blitting to give a clean slate.
 def to_vect(v):
 	return np.array([v.x, v.y, v.z])
 	
+def v4_to_landmark(v):
+	lm = landmark_pb2.NormalizedLandmark()
+	lm.x = v[0]
+	lm.y = v[1]
+	lm.z = v[2]
+	return lm
+
 def runcv():
 	# For webcam input:
 	cap = cv2.VideoCapture(0)
@@ -141,14 +148,15 @@ def runcv():
 					mp_drawing_styles.get_default_hand_landmarks_style(),
 					mp_drawing_styles.get_default_hand_connections_style())
 				
-						
-				lm = landmark_pb2.NormalizedLandmark()
-				lm.x = .5
-				lm.y = .5
-				lm.z = 0
+				
+				vref_test_b = np.array([4.16,-1.67,2.47,1])*scale
+				vref_test_b[3] = 1
+				vref_w = hw_b.dot(vref_test_b)
+				print(vref_w)
+				
 				l_list = landmark_pb2.NormalizedLandmarkList(
 					landmark = [
-						lm
+						v4_to_landmark(vref_w)
 					]
 				)
 				mp_drawing.draw_landmarks(
@@ -166,7 +174,7 @@ def runcv():
 			if cv2.waitKey(5) & 0xFF == 27:
 				break
 			
-			print (fps)
+			#print (fps)
 			
 	cap.release()
 
