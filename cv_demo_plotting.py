@@ -14,7 +14,7 @@ mp_hands = mp.solutions.hands
 
 
 fig,ax = plt.subplots()
-plt.setp(ax,ylim = (-10,10))
+plt.setp(ax,ylim = (-np.pi,np.pi))
 
 bufwidth = 100
 num_lines = 4
@@ -104,7 +104,7 @@ def runcv():
 				hw_b = np.zeros((4,4))
 				vx = np.subtract(index_mcp, base)
 				vx = vx/np.sqrt(vx.dot(vx))				
-				vyref = np.subtract(thumb_cmc,base)
+				vyref = np.subtract(pinky_mcp,base)
 				vyref = vyref/np.sqrt(vyref.dot(vyref))
 				vz = np.cross(vx, vyref)
 				vz = vz/np.sqrt(vz.dot(vz))
@@ -126,8 +126,10 @@ def runcv():
 				
 				
 				thumb_tip_b = hb_w.dot(v3_to_v4(thumb_tip))/scale				
+				fpos[5] = np.arctan2(thumb_tip_b[2],thumb_tip_b[1])
 				
-				yield t, scale, thumb_tip_b[0], thumb_tip_b[1], thumb_tip_b[2]
+				
+				yield t, scale, fpos[0], fpos[5], fpos[4]
 								
 				#for hand_landmarks in results.multi_hand_landmarks:
 				hand_landmarks = results.multi_hand_landmarks[0]
@@ -167,5 +169,5 @@ def animate(args):
 	return lines
 	
 anim = animation.FuncAnimation(fig, animate, init_func=init, frames=runcv, interval=0, blit=True,  save_count = 50)
-ax.legend(['scale','x','y','z'])
+ax.legend(['scale','idx','tr','tf'])
 plt.show()
