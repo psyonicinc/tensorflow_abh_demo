@@ -32,12 +32,21 @@ hb_w = ht_inverse(hw_b)
 base4 = v3_to_v4(base)
 op_b = hb_w.dot(base4)  #NOTE: this is the way to multiply a 4x4 matrix by a 4x1 array!!! use dot
 
+v1 = np.array([1,0,0,1])
+v2 = np.array([0,1,0,1])
+ang = vect_angle(v1[0:2],v2[0:2])
+
+v1 = np.array([0,1,1,1])
+hx = ht_rotx(90*np.pi/180)
+v2 = hx.dot(v1)
+
 tend = cv2.getTickCount()
 
-print (hw_b)
-print (hb_w)
+print(v2)
+#print (hw_b)
+#print (hb_w)
 #print(base4)
-print(op_b)
-print(tend-tstart)
+#print(op_b)
+#print(tend-tstart)
 
 

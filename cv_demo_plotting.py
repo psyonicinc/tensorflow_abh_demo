@@ -15,8 +15,7 @@ mp_hands = mp.solutions.hands
 
 
 fig,ax = plt.subplots()
-plt.setp(ax,ylim = (-np.pi,np.pi))
-
+plt.setp(ax,ylim = (-100,100))
 bufwidth = 100
 num_lines = 4
 lines = []
@@ -132,13 +131,28 @@ def runcv():
 				norm_idx_mcp = np.sqrt(mcp2tip.dot(mcp2tip))/scale
 				fpos[0] = norm_idx_mcp*90+15
 				
+				#seed for thumb angles. this formula currently breaks for left hands,
+				#i.e. right hand only. Need some logic or generalized math for handling
+				# the mirrored case
+				thumb_tip_b = hb_w.dot(v3_to_v4(thumb_tip))/scale		
+				thumb_tip_b[3] = 1
+				ang_tr = np.arctan2(-thumb_tip_b[2],-thumb_tip_b[1])
+				ang_tf = np.arctan2(thumb_tip_b[2],-thumb_tip_b[0])
 				
-				thumb_tip_b = hb_w.dot(v3_to_v4(thumb_tip))/scale				
-				fpos[5] = np.arctan2(thumb_tip_b[2],thumb_tip_b[1])
+				fpos[5] = (ang_tr - (-.8))*((-100-(-15))/(-2.4-(-.8)))
+				fpos[5] = clamp(fpos[5], -100,-5)
+				fpos[4] = (ang_tf-2.2)*((80-15)/(2.9-2.2))
+				fpos[4] = clamp(fpos[4],10,90)
+				
+				neutral_thumb_b = np.array([4.16,-1.67,2.47,1])*scale
+				neutral_thumb_b[3] = 1	#remove scaling that was applied to the immutable '1'
 				
 				
+				 
+				print (fpos[4], fpos[5])
 				yield t, scale, fpos[0], fpos[5], fpos[4]
 								
+					
 				#for hand_landmarks in results.multi_hand_landmarks:
 				hand_landmarks = results.multi_hand_landmarks[0]
 				mp_drawing.draw_landmarks(
@@ -149,14 +163,10 @@ def runcv():
 					mp_drawing_styles.get_default_hand_connections_style())
 				
 				
-				vref_test_b = np.array([4.16,-1.67,2.47,1])*scale
-				vref_test_b[3] = 1
-				vref_w = hw_b.dot(vref_test_b)
-				print(vref_w)
-				
+				neutral_thumb_w = hw_b.dot(neutral_thumb_b)	#get dot position in world coordinates for a visual tag/reference				
 				l_list = landmark_pb2.NormalizedLandmarkList(
 					landmark = [
-						v4_to_landmark(vref_w)
+						v4_to_landmark(neutral_thumb_w)
 					]
 				)
 				mp_drawing.draw_landmarks(
