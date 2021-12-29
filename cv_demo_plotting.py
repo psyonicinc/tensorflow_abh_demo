@@ -82,7 +82,8 @@ def runcv():
 			# Draw the hand annotations on the image.
 			#image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
 			if results.multi_hand_landmarks:
-									
+				
+				#log time for plotting
 				t = time.time()
 
 				#get the handedness
@@ -91,19 +92,17 @@ def runcv():
 					handed_sign = 1 #1 for left, -1 for right. Apply to Z component when doing arctan2
 				else:
 					handed_sign = -1
-
-				base = to_vect(results.multi_hand_landmarks[0].landmark[mp_hands.HandLandmark.WRIST])
 				
+				#load landmarks into np.arrays, so we can use np to perform vectorized math operations
+				base = to_vect(results.multi_hand_landmarks[0].landmark[mp_hands.HandLandmark.WRIST])
 				index_mcp = to_vect(results.multi_hand_landmarks[0].landmark[mp_hands.HandLandmark.INDEX_FINGER_MCP])
 				middle_mcp = to_vect(results.multi_hand_landmarks[0].landmark[mp_hands.HandLandmark.MIDDLE_FINGER_MCP])
 				ring_mcp = to_vect(results.multi_hand_landmarks[0].landmark[mp_hands.HandLandmark.RING_FINGER_MCP])
 				pinky_mcp = to_vect(results.multi_hand_landmarks[0].landmark[mp_hands.HandLandmark.PINKY_MCP])
-								
 				index_tip = to_vect(results.multi_hand_landmarks[0].landmark[mp_hands.HandLandmark.INDEX_FINGER_TIP])
 				middle_tip = to_vect(results.multi_hand_landmarks[0].landmark[mp_hands.HandLandmark.MIDDLE_FINGER_TIP])
 				ring_tip = to_vect(results.multi_hand_landmarks[0].landmark[mp_hands.HandLandmark.RING_FINGER_TIP])
-				pinky_tip = to_vect(results.multi_hand_landmarks[0].landmark[mp_hands.HandLandmark.PINKY_TIP])
-				
+				pinky_tip = to_vect(results.multi_hand_landmarks[0].landmark[mp_hands.HandLandmark.PINKY_TIP])			
 				thumb_tip = to_vect(results.multi_hand_landmarks[0].landmark[mp_hands.HandLandmark.THUMB_TIP])
 				thumb_cmc = to_vect(results.multi_hand_landmarks[0].landmark[mp_hands.HandLandmark.THUMB_CMC])
 			
@@ -117,7 +116,7 @@ def runcv():
 				v3 = np.subtract(ring_mcp, pinky_mcp)
 				scale = (mag(v1) + mag(v2) + mag(v3))/3
 	
-				#obtain hw_b and hb_0
+				#obtain hw_b and hb_w
 				hw_b = np.zeros((4,4))
 				vx = np.subtract(index_mcp, base)
 				vx = vx/mag(vx)
@@ -134,6 +133,7 @@ def runcv():
 				hw_b[3, 0:4] = np.array([0,0,0,1])
 				hb_w = ht_inverse(hw_b)
 				
+				#compute all finger angles
 				fngs = [index_tip, middle_tip, ring_tip, pinky_tip]
 				mcps = [index_mcp, middle_mcp, ring_mcp, pinky_mcp]
 				for i in range(0,4): 
@@ -154,13 +154,7 @@ def runcv():
 					fpos[i] = (ang-min_fng_rad)*((max_fng-min_fng)/(max_fng_rad-min_fng_rad))
 					fpos[i] = clamp(fpos[i], min_fng, max_fng)
 				
-				
-				
-				
-				
-				#seed for thumb angles. this formula currently breaks for left hands,
-				#i.e. right hand only. Need some logic or generalized math for handling
-				# the mirrored case
+				#compute and map thumb angles
 				thumb_tip_b = hb_w.dot(v3_to_v4(thumb_tip))/scale		
 				thumb_tip_b[3] = 1
 				ang_tr = np.arctan2(handed_sign*thumb_tip_b[2],-thumb_tip_b[1])
@@ -180,11 +174,10 @@ def runcv():
 				fpos[4] = (ang_tf-min_tf_rad)*((max_tf-min_tf)/(max_tf_rad-min_tf_rad))
 				fpos[4] = clamp(fpos[4],min_tf,max_tf)
 				
-				
+				#expose values to the plotting code
 				yield t, fpos[0], fpos[1], fpos[2], fpos[3], fpos[4], fpos[5]
 								
-
-				#for hand_landmarks in results.multi_hand_landmarks:
+				#draw landmarks of the hand we found
 				hand_landmarks = results.multi_hand_landmarks[0]
 				mp_drawing.draw_landmarks(
 					image,
@@ -193,8 +186,9 @@ def runcv():
 					mp_drawing_styles.get_default_hand_landmarks_style(),
 					mp_drawing_styles.get_default_hand_connections_style())
 
-				#establish and render a static point in the base frame of the model
-				static_point_b = np.array([4.16, 1.05, 1.47,1])*scale	
+				#render a static point in the base frame of the model. Visualization of the position-orientation accuracy.
+				#Point should be just in front of the palm. Compensated for handedness
+				static_point_b = np.array([4.16, 1.05, -1.47*handed_sign, 1])*scale			
 				static_point_b[3] = 1	#remove scaling that was applied to the immutable '1'
 				neutral_thumb_w = hw_b.dot(static_point_b)	#get dot position in world coordinates for a visual tag/reference				
 				l_list = landmark_pb2.NormalizedLandmarkList(
