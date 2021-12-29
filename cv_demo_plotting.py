@@ -4,13 +4,11 @@ import time
 import numpy as np
 from matplotlib import animation
 from matplotlib import pyplot as plt
-from mediapipe.framework.formats import landmark_pb2
-from ht_matrix import *
+from vect_tools import *
 
 mp_drawing = mp.solutions.drawing_utils
 mp_drawing_styles = mp.solutions.drawing_styles
 mp_hands = mp.solutions.hands
-
 
 fig,ax = plt.subplots()
 plt.setp(ax,ylim = (-100,100))
@@ -34,16 +32,6 @@ def init(): # required for blitting to give a clean slate.
 	for line in lines:
 		line.set_data([],[])
 	return lines
-
-def to_vect(v):
-	return np.array([v.x, v.y, v.z])
-	
-def v4_to_landmark(v):
-	lm = landmark_pb2.NormalizedLandmark()
-	lm.x = v[0]
-	lm.y = v[1]
-	lm.z = v[2]
-	return lm
 
 def runcv():
 	# For webcam input:

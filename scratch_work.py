@@ -1,6 +1,6 @@
 import cv2
 import numpy as np
-from ht_matrix import *
+from vect_tools import *
     
 tstart = cv2.getTickCount()
 

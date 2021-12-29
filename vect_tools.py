@@ -1,4 +1,5 @@
 import numpy as np
+from mediapipe.framework.formats import landmark_pb2
 
 def ht_inverse(hin):
     hout = np.zeros((4,4))
@@ -35,3 +36,13 @@ def mag(v):
 	
 def linmap(v, outmax,outmin, inmax,inmin):
 	return (v-inmin)*((outmax-outmin)/(inmax-inmin))
+
+def to_vect(v):
+	return np.array([v.x, v.y, v.z])
+	
+def v4_to_landmark(v):
+	lm = landmark_pb2.NormalizedLandmark()
+	lm.x = v[0]
+	lm.y = v[1]
+	lm.z = v[2]
+	return lm
