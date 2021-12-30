@@ -9,7 +9,21 @@ from rtfilt import *
 from abh_api_core import *
 from scipy import signal
 import serial
+from serial.tools import list_ports
 
+""" 
+	Find a serial com port.
+"""
+com_ports_list = list(list_ports.comports())
+port = ""
+for p in com_ports_list:
+	if(p):
+		port = p
+		print("Found:", port)
+		break
+if not port:
+	print("No port found")
+	
 """
 	Design the low pass filter we will use on the angle outputs.
 	NOTE:
@@ -29,7 +43,7 @@ lpf_sos = signal.iirfilter(2, Wn=3, btype='lowpass', analog=False, ftype='butter
 """
 	Program constants. Used for linear mapping offset/gain, etc.
 """
-max_fng = 95
+max_fng = 115
 min_fng = 10
 max_fng_rad = 2.85
 min_fng_rad = .1
@@ -63,8 +77,11 @@ fps = int(cap.get(5))
 print("fps:",fps)
 
 #open serial port! 
-ser = serial.Serial('COM4','460800', timeout = 1)
-
+#ser = serial.Serial('COM3','460800', timeout = 1)
+if(port):
+	ser = serial.Serial(port[0],'460800', timeout = 1)
+	print ("connected!")
+			
 with mp_hands.Hands(
 		max_num_hands=1,
 		model_complexity=0,
@@ -178,6 +195,7 @@ with mp_hands.Hands(
 			#mapthumb flexor
 			fpos[5] = (ang_tr - max_tr_rad)*((min_tr-max_tr)/(min_tr_rad-max_tr_rad))
 			fpos[5] = clamp(fpos[5], min_tr,max_tr)
+			
 			#map thumb rotator
 			fpos[4] = (ang_tf-min_tf_rad)*((max_tf-min_tf)/(max_tf_rad-min_tf_rad))
 			fpos[4] = clamp(fpos[4],min_tf,max_tf)
@@ -185,9 +203,11 @@ with mp_hands.Hands(
 			
 			for i in range(len(fpos)):
 				fpos[i], warr[i] = py_sos_iir(fpos[i], warr[i], lpf_sos[0])
-			
-			msg = farr_to_barr(fpos)
-			ser.write(msg)
+
+			if port:
+				# Write the finger array out over UART to the hand!
+				msg = farr_to_barr(fpos)
+				ser.write(msg)
 
 
 			#draw landmarks of the hand we found
@@ -229,4 +249,5 @@ with mp_hands.Hands(
 		
 		
 cap.release()
-ser.close()
+if port:
+	ser.close()
