@@ -9,6 +9,20 @@ from rtfilt import *
 from abh_api_core import *
 from scipy import signal
 import serial
+from serial.tools import list_ports
+
+""" 
+	Find a serial com port.
+"""
+com_ports_list = list(list_ports.comports())
+port = ""
+for p in com_ports_list:
+	if(p):
+		port = p
+		print("Found:", port)
+		break
+if not port:
+	print("No port found")
 
 """
 	Design the low pass filter we will use on the angle outputs.
@@ -29,7 +43,7 @@ lpf_sos = signal.iirfilter(2, Wn=3, btype='lowpass', analog=False, ftype='butter
 """
 	Program constants. Used for linear mapping offset/gain, etc.
 """
-max_fng = 95
+max_fng = 115
 min_fng = 10
 max_fng_rad = 2.85
 min_fng_rad = .1
@@ -99,8 +113,11 @@ def runcv():
 		tprev = cv2.getTickCount()	
 		
 		#open serial port! 
-		ser = serial.Serial('COM4','460800', timeout = 1)
-
+		#ser = serial.Serial('COM3','460800', timeout = 1)
+		if(port):
+			ser = serial.Serial(port[0],'460800', timeout = 1)
+			print ("connected!")
+		
 		#initialize array used for writing out hand positions
 		fpos = [15,15,15,15,15,-15]
 		
@@ -222,9 +239,11 @@ def runcv():
 				#expose values to the plotting code
 				yield t, fpos[0], fpos[1], fpos[2], fpos[3], fpos[4], fpos[5]
 
-				# Write the finger array out over UART to the hand!
-				msg = farr_to_barr(fpos)
-				ser.write(msg)
+
+				if port:
+					# Write the finger array out over UART to the hand!
+					msg = farr_to_barr(fpos)
+					ser.write(msg)
 				
 				
 				#draw landmarks of the hand we found
@@ -263,7 +282,8 @@ def runcv():
 			print (fps)
 			
 	cap.release()
-	ser.close()
+	if port:
+		ser.close()
 
 x = []
 y = []
