@@ -86,6 +86,10 @@ def init(): # required for blitting to give a clean slate.
 def runcv():
 	# For webcam input:
 	cap = cv2.VideoCapture(0)
+	cap.set(cv2.CAP_PROP_FPS, 60)
+	fps = int(cap.get(5))
+	print("fps:",fps)
+
 	with mp_hands.Hands(
 			max_num_hands=1,
 			model_complexity=0,
