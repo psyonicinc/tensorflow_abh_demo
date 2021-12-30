@@ -84,7 +84,7 @@ def init(): # required for blitting to give a clean slate.
 def runcv():
 	# For webcam input:
 	cap = cv2.VideoCapture(0)
-	cap.set(cv2.CAP_PROP_FPS, 60)
+	cap.set(cv2.CAP_PROP_FPS, 90)
 	fps = int(cap.get(5))
 	print("fps:",fps)
 	
@@ -211,7 +211,10 @@ def runcv():
 				
 				#expose values to the plotting code
 				yield t, fpos[0], fpos[1], fpos[2], fpos[3], fpos[4], fpos[5]
-								
+				
+
+
+
 				#draw landmarks of the hand we found
 				hand_landmarks = results.multi_hand_landmarks[0]
 				mp_drawing.draw_landmarks(
@@ -237,13 +240,12 @@ def runcv():
 					[],
 					mp_drawing_styles.get_default_hand_landmarks_style(),
 					mp_drawing_styles.get_default_hand_connections_style())
-				
-					
+
 				
 			# Flip the image horizontally for a selfie-view display.
 			cv2.imshow('MediaPipe Hands', cv2.flip(image, 1))
 
-			if cv2.waitKey(5) & 0xFF == 27:
+			if cv2.waitKey(1) & 0xFF == 27:
 				break
 			
 			print (fps)

@@ -4,9 +4,9 @@ tprev = cv2.getTickCount()
 
 # For webcam input:
 cap = cv2.VideoCapture(0)
-#cap.set(cv2.CAP_PROP_FPS, 60)
-#fps = int(cap.get(5))
-#print("fps:",fps)
+cap.set(cv2.CAP_PROP_FPS, 90)
+fps = int(cap.get(5))
+print("fps:",fps)
 
 while cap.isOpened():
 
@@ -32,6 +32,6 @@ while cap.isOpened():
 	if cv2.waitKey(5) & 0xFF == 27:
 		break
 	
-	#print (fps)
+	print (fps)
 		
 cap.release()

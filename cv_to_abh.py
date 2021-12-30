@@ -86,7 +86,7 @@ def init(): # required for blitting to give a clean slate.
 def runcv():
 	# For webcam input:
 	cap = cv2.VideoCapture(0)
-	cap.set(cv2.CAP_PROP_FPS, 60)
+	cap.set(cv2.CAP_PROP_FPS, 90)
 	fps = int(cap.get(5))
 	print("fps:",fps)
 
@@ -257,9 +257,9 @@ def runcv():
 			# Flip the image horizontally for a selfie-view display.
 			cv2.imshow('MediaPipe Hands', cv2.flip(image, 1))
 
-			if cv2.waitKey(5) & 0xFF == 27:
+			if cv2.waitKey(1) & 0xFF == 27:
 				break
-			
+
 			print (fps)
 			
 	cap.release()
