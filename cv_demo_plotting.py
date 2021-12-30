@@ -24,33 +24,63 @@ from scipy import signal
 """
 lpf_sos = signal.iirfilter(2, Wn=3, btype='lowpass', analog=False, ftype='butter', output='sos', fs=30)
 
+"""
+	Program constants. Used for linear mapping offset/gain, etc.
+"""
+max_fng = 95
+min_fng = 10
+max_fng_rad = 2.85
+min_fng_rad = .1
+max_tr = -5
+min_tr = -100
+max_tr_rad = -.8
+min_tr_rad = -2.4
+max_tf = 110
+min_tf = 10
+max_tf_rad = 3.15
+min_tf_rad = 2.5
+
+"""
+	Mediapipe setup/initialization
+"""
 mp_drawing = mp.solutions.drawing_utils
 mp_drawing_styles = mp.solutions.drawing_styles
 mp_hands = mp.solutions.hands
 
+
+"""
+	Figure/plotting initializiation
+"""
 fig,ax = plt.subplots()
-plt.setp(ax,ylim = (-100,100))
+plt.setp(ax,ylim = (-100,100))	#manually set axis y limits
 bufwidth = 100
 num_lines = 6
 lines = []
 xbuf = []
 ybuf = []
-
+#setup xy buffers to plot and axes
 for i in range(num_lines):
 	lines.append(ax.plot([],[])[0])
 	xbuf.append([])
 	ybuf.append([])
-
+#initalize all xy buffers to 0
 for i in range(0, num_lines):	
 	for j in range(0,bufwidth):
 		xbuf[i].append(0)
 		ybuf[i].append(0)
-
+#initialization function. needed for the 'blitting' option,
+#which is the lowest latency plotting option
 def init(): # required for blitting to give a clean slate.
 	for line in lines:
 		line.set_data([],[])
 	return lines
 
+"""
+	Main program loop. 
+	
+	Does computer vision, angle extraction, filtering.
+	For plotting to work, execute as the 'frames' function.
+"""
 def runcv():
 	# For webcam input:
 	cap = cv2.VideoCapture(0)
@@ -156,10 +186,6 @@ def runcv():
 					o_tip_b = np.subtract(tip_b[0:3], mcp_b[0:3])
 					ang = np.arctan2(-handed_sign*o_tip_b[2],o_tip_b[0])
 					#map fingers
-					max_fng = 95
-					min_fng = 10
-					max_fng_rad = 2.85
-					min_fng_rad = .1
 					fpos[i] = (ang-min_fng_rad)*((max_fng-min_fng)/(max_fng_rad-min_fng_rad))
 					fpos[i] = clamp(fpos[i], min_fng, max_fng)
 				
@@ -169,17 +195,9 @@ def runcv():
 				ang_tr = np.arctan2(handed_sign*thumb_tip_b[2],-thumb_tip_b[1])
 				ang_tf = np.arctan2(-handed_sign*thumb_tip_b[2],-thumb_tip_b[0])
 				#mapthumb flexor
-				max_tr = -5
-				min_tr = -100
-				max_tr_rad = -.8
-				min_tr_rad = -2.4
 				fpos[5] = (ang_tr - max_tr_rad)*((min_tr-max_tr)/(min_tr_rad-max_tr_rad))
 				fpos[5] = clamp(fpos[5], min_tr,max_tr)
 				#map thumb rotator
-				max_tf = 110
-				min_tf = 10
-				max_tf_rad = 3.15
-				min_tf_rad = 2.5
 				fpos[4] = (ang_tf-min_tf_rad)*((max_tf-min_tf)/(max_tf_rad-min_tf_rad))
 				fpos[4] = clamp(fpos[4],min_tf,max_tf)
 				
