@@ -169,10 +169,17 @@ def runcv():
 				middle_mcp = to_vect(results.multi_hand_landmarks[0].landmark[mp_hands.HandLandmark.MIDDLE_FINGER_MCP])
 				ring_mcp = to_vect(results.multi_hand_landmarks[0].landmark[mp_hands.HandLandmark.RING_FINGER_MCP])
 				pinky_mcp = to_vect(results.multi_hand_landmarks[0].landmark[mp_hands.HandLandmark.PINKY_MCP])
+				
+				index_pip = to_vect(results.multi_hand_landmarks[0].landmark[mp_hands.HandLandmark.INDEX_FINGER_PIP])
+				middle_pip = to_vect(results.multi_hand_landmarks[0].landmark[mp_hands.HandLandmark.MIDDLE_FINGER_PIP])
+				ring_pip = to_vect(results.multi_hand_landmarks[0].landmark[mp_hands.HandLandmark.RING_FINGER_PIP])
+				pinky_pip = to_vect(results.multi_hand_landmarks[0].landmark[mp_hands.HandLandmark.PINKY_PIP])
+				
 				index_tip = to_vect(results.multi_hand_landmarks[0].landmark[mp_hands.HandLandmark.INDEX_FINGER_TIP])
 				middle_tip = to_vect(results.multi_hand_landmarks[0].landmark[mp_hands.HandLandmark.MIDDLE_FINGER_TIP])
 				ring_tip = to_vect(results.multi_hand_landmarks[0].landmark[mp_hands.HandLandmark.RING_FINGER_TIP])
 				pinky_tip = to_vect(results.multi_hand_landmarks[0].landmark[mp_hands.HandLandmark.PINKY_TIP])			
+				
 				thumb_tip = to_vect(results.multi_hand_landmarks[0].landmark[mp_hands.HandLandmark.THUMB_TIP])
 				thumb_cmc = to_vect(results.multi_hand_landmarks[0].landmark[mp_hands.HandLandmark.THUMB_CMC])
 				thumb_mcp = to_vect(results.multi_hand_landmarks[0].landmark[mp_hands.HandLandmark.THUMB_MCP])
@@ -205,22 +212,31 @@ def runcv():
 				hw_b[3, 0:4] = np.array([0,0,0,1])
 				hb_w = ht_inverse(hw_b)
 				
+				
+				
 				#compute all finger angles
-				fngs = [index_tip, middle_tip, ring_tip, pinky_tip]
+				tips = [index_tip, middle_tip, ring_tip, pinky_tip]
+				pips = [index_pip, middle_pip, ring_pip, pinky_pip]
 				mcps = [index_mcp, middle_mcp, ring_mcp, pinky_mcp]
 				for i in range(0,4): 
-					tip = fngs[i]
+					tip = tips[i]
+					pip = pips[i]
 					mcp = mcps[i]
 					#get index angle
 					tip_b = hb_w.dot(v3_to_v4(tip))/scale
 					tip_b[3] = 1
+					pip_b = hb_w.dot(v3_to_v4(pip))/scale
+					pip_b[3] = 1
 					mcp_b = hb_w.dot(v3_to_v4(mcp))/scale
 					mcp_b[3] = 1
-					o_tip_b = np.subtract(tip_b[0:3], mcp_b[0:3])
-					ang = np.arctan2(-handed_sign*o_tip_b[2],o_tip_b[0])
+					
+					tip_pip_b = np.subtract(tip_b, pip_b)
+					pip_mcp_b = np.subtract(pip_b, mcp_b)
+					q1 = vect_angle(tip_pip_b, pip_mcp_b)
+					q2 = vect_angle(pip_mcp_b, mcp_b)
+					fpos[i] = (q1+q2)*180/np.pi
 					#map fingers
-					fpos[i] = (ang-min_fng_rad)*((max_fng-min_fng)/(max_fng_rad-min_fng_rad))
-					fpos[i] = clamp(fpos[i], min_fng, max_fng)
+					
 				
 				#compute all thumb vectors (to base)
 				thumb_tip_b = hb_w.dot(v3_to_v4(thumb_tip))/scale		
