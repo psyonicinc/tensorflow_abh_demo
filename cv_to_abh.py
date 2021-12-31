@@ -175,7 +175,8 @@ def runcv():
 				pinky_tip = to_vect(results.multi_hand_landmarks[0].landmark[mp_hands.HandLandmark.PINKY_TIP])			
 				thumb_tip = to_vect(results.multi_hand_landmarks[0].landmark[mp_hands.HandLandmark.THUMB_TIP])
 				thumb_cmc = to_vect(results.multi_hand_landmarks[0].landmark[mp_hands.HandLandmark.THUMB_CMC])
-			
+				thumb_mcp = to_vect(results.multi_hand_landmarks[0].landmark[mp_hands.HandLandmark.THUMB_MCP])
+				
 				#get scale. scale is equal to the distance (in 0-1 generalized pixel coordinates) 
 				# between the base/wrist position and the MCP position of the index finger
 				# we use scale to make mapped hand positions robust to relative pixel distances
@@ -224,13 +225,25 @@ def runcv():
 				thumb_tip_b = hb_w.dot(v3_to_v4(thumb_tip))/scale		
 				thumb_tip_b[3] = 1
 				ang_tr = np.arctan2(handed_sign*thumb_tip_b[2],-thumb_tip_b[1])
-				ang_tf = np.arctan2(-handed_sign*thumb_tip_b[2],-thumb_tip_b[0])
 				#mapthumb flexor
-				fpos[5] = (ang_tr - max_tr_rad)*((min_tr-max_tr)/(min_tr_rad-max_tr_rad))
+				#fpos[5] = (ang_tr - max_tr_rad)*((min_tr-max_tr)/(min_tr_rad-max_tr_rad))
+				fpos[5] = ang_tr*180/np.pi + 50
 				fpos[5] = clamp(fpos[5], min_tr,max_tr)
+				
+				#ang_tf = np.arctan2(-handed_sign*thumb_tip_b[2],-thumb_tip_b[0])
+				thumb_mcp_b = hb_w.dot(v3_to_v4(thumb_mcp))/scale
+				thumb_tip_b[3] = 1
+				thumb_cmc_b = hb_w.dot(v3_to_v4(thumb_cmc))/scale
+				thumb_cmc_b[3] = 1
+				
+				tip_to_mcp_b = np.subtract(thumb_tip_b, thumb_mcp_b)				
+				mcp_to_cmc_b = np.subtract(thumb_mcp_b, thumb_cmc_b)
+								
+				ang_tf = vect_angle(tip_to_mcp_b[0:3], mcp_to_cmc_b[0:3])*180/np.pi
 				#map thumb rotator
-				fpos[4] = (ang_tf-min_tf_rad)*((max_tf-min_tf)/(max_tf_rad-min_tf_rad))
-				fpos[4] = clamp(fpos[4],min_tf,max_tf)
+				fpos[4] = ang_tf
+				#fpos[4] = (ang_tf-min_tf_rad)*((max_tf-min_tf)/(max_tf_rad-min_tf_rad))
+				#fpos[4] = clamp(fpos[4],min_tf,max_tf)
 				
 				
 				for i in range(len(fpos)):
