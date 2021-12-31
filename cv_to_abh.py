@@ -10,6 +10,7 @@ from abh_api_core import *
 from scipy import signal
 import serial
 from serial.tools import list_ports
+from gestures import *
 
 """ 
 	Find a serial com port.
@@ -213,31 +214,6 @@ def runcv():
 				hb_w = ht_inverse(hw_b)
 				
 				
-				
-				#compute all finger angles
-				tips = [index_tip, middle_tip, ring_tip, pinky_tip]
-				pips = [index_pip, middle_pip, ring_pip, pinky_pip]
-				mcps = [index_mcp, middle_mcp, ring_mcp, pinky_mcp]
-				for i in range(0,4): 
-					tip = tips[i]
-					pip = pips[i]
-					mcp = mcps[i]
-					#get index angle
-					tip_b = hb_w.dot(v3_to_v4(tip))/scale
-					tip_b[3] = 1
-					pip_b = hb_w.dot(v3_to_v4(pip))/scale
-					pip_b[3] = 1
-					mcp_b = hb_w.dot(v3_to_v4(mcp))/scale
-					mcp_b[3] = 1
-					
-					tip_pip_b = np.subtract(tip_b, pip_b)
-					pip_mcp_b = np.subtract(pip_b, mcp_b)
-					q1 = vect_angle(tip_pip_b, pip_mcp_b)
-					q2 = vect_angle(pip_mcp_b, mcp_b)
-					fpos[i] = (q1+q2)*180/np.pi
-					#map fingers
-					
-				
 				#compute all thumb vectors (to base)
 				thumb_tip_b = hb_w.dot(v3_to_v4(thumb_tip))/scale		
 				thumb_tip_b[3] = 1
@@ -260,8 +236,46 @@ def runcv():
 				fpos[4] = linmap(ang_tf, outp_tf, inp_tf)
 				
 				
+				#compute all finger angles
+				tips = [index_tip, middle_tip, ring_tip, pinky_tip]
+				pips = [index_pip, middle_pip, ring_pip, pinky_pip]
+				mcps = [index_mcp, middle_mcp, ring_mcp, pinky_mcp]
+				dist_to_thumb = [0, 0, 0, 0, 0, 0]
+				for i in range(0,4): 
+					tip = tips[i]
+					pip = pips[i]
+					mcp = mcps[i]
+										
+					#get index angle
+					tip_b = hb_w.dot(v3_to_v4(tip))/scale
+					tip_b[3] = 1
+					pip_b = hb_w.dot(v3_to_v4(pip))/scale
+					pip_b[3] = 1
+					mcp_b = hb_w.dot(v3_to_v4(mcp))/scale
+					mcp_b[3] = 1
+
+					tip_to_thumb_b = np.subtract(tip_b[0:3], thumb_tip_b[0:3])
+					dist_to_thumb[i] = mag(tip_to_thumb_b)
+
+					tip_pip_b = np.subtract(tip_b, pip_b)
+					pip_mcp_b = np.subtract(pip_b, mcp_b)
+					q1 = vect_angle(tip_pip_b, pip_mcp_b)
+					q2 = vect_angle(pip_mcp_b, mcp_b)
+					fpos[i] = (q1+q2)*180/np.pi
+					#map fingers
+								
+				
 				for i in range(len(fpos)):
 					fpos[i], warr[i] = py_sos_iir(fpos[i], warr[i], lpf_sos[0])
+				
+				"""
+					Override touching fingers with prebaked grips
+				"""
+				word = 0
+				for i in range(0,4):
+					word |= (dist_to_thumb[i] < 2.7) << i
+				fpos = override_grip(fpos, word)
+				#print(word)
 				
 				#expose values to the plotting code
 				yield t, fpos[0], fpos[1], fpos[2], fpos[3], fpos[4], fpos[5]
