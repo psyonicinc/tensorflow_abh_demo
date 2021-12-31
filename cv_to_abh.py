@@ -131,6 +131,7 @@ def runcv():
 		is_set_grip = 0
 		grip_word = 0
 		
+		
 		while cap.isOpened():
 		
 			ts = cv2.getTickCount()
@@ -278,14 +279,13 @@ def runcv():
 				word = 0
 				for i in range(0,4):
 					word |= (dist_to_thumb[i] < 2.7) << i
-				if word != 0:
+				if word != 0 and is_set_grip == 0:
 					is_set_grip = 1
 					grip_word = word
-				else:
+				elif word == 0:
 					is_set_grip = 0
 				if(is_set_grip):
 					fpos = override_grip(fpos, grip_word)
-				#print(word)
 				
 				#expose values to the plotting code
 				yield t, fpos[0], fpos[1], fpos[2], fpos[3], fpos[4], fpos[5]
