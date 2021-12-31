@@ -47,14 +47,14 @@ max_fng = 115
 min_fng = 10
 max_fng_rad = 2.85
 min_fng_rad = .1
-max_tr = -5
-min_tr = -100
-max_tr_rad = -.8
-min_tr_rad = -2.4
-max_tf = 110
-min_tf = 10
-max_tf_rad = 3.15
-min_tf_rad = 2.5
+
+outp_tr = [-5,-70]
+inp_tr = [-50, -75]
+outrange_tr = [-5,-110]
+
+outp_tf = [0,60]
+inp_tf = [0,40]
+outrange_tf = [10, 90]
 
 """
 	Mediapipe setup/initialization
@@ -176,6 +176,7 @@ def runcv():
 				thumb_tip = to_vect(results.multi_hand_landmarks[0].landmark[mp_hands.HandLandmark.THUMB_TIP])
 				thumb_cmc = to_vect(results.multi_hand_landmarks[0].landmark[mp_hands.HandLandmark.THUMB_CMC])
 				thumb_mcp = to_vect(results.multi_hand_landmarks[0].landmark[mp_hands.HandLandmark.THUMB_MCP])
+				thumb_ip = to_vect(results.multi_hand_landmarks[0].landmark[mp_hands.HandLandmark.THUMB_IP])
 				
 				#get scale. scale is equal to the distance (in 0-1 generalized pixel coordinates) 
 				# between the base/wrist position and the MCP position of the index finger
@@ -221,29 +222,26 @@ def runcv():
 					fpos[i] = (ang-min_fng_rad)*((max_fng-min_fng)/(max_fng_rad-min_fng_rad))
 					fpos[i] = clamp(fpos[i], min_fng, max_fng)
 				
-				#compute and map thumb angles
+				#compute all thumb vectors (to base)
 				thumb_tip_b = hb_w.dot(v3_to_v4(thumb_tip))/scale		
 				thumb_tip_b[3] = 1
-				ang_tr = np.arctan2(handed_sign*thumb_tip_b[2],-thumb_tip_b[1])
-				#mapthumb flexor
-				#fpos[5] = (ang_tr - max_tr_rad)*((min_tr-max_tr)/(min_tr_rad-max_tr_rad))
-				fpos[5] = ang_tr*180/np.pi + 50
-				fpos[5] = clamp(fpos[5], min_tr,max_tr)
-				
-				#ang_tf = np.arctan2(-handed_sign*thumb_tip_b[2],-thumb_tip_b[0])
+				thumb_ip_b = hb_w.dot(v3_to_v4(thumb_ip))/scale
+				thumb_ip_b[3] = 1
 				thumb_mcp_b = hb_w.dot(v3_to_v4(thumb_mcp))/scale
-				thumb_tip_b[3] = 1
+				thumb_mcp_b[3] = 1
 				thumb_cmc_b = hb_w.dot(v3_to_v4(thumb_cmc))/scale
 				thumb_cmc_b[3] = 1
 				
-				tip_to_mcp_b = np.subtract(thumb_tip_b, thumb_mcp_b)				
-				mcp_to_cmc_b = np.subtract(thumb_mcp_b, thumb_cmc_b)
-								
-				ang_tf = vect_angle(tip_to_mcp_b[0:3], mcp_to_cmc_b[0:3])*180/np.pi
-				#map thumb rotator
-				fpos[4] = ang_tf
-				#fpos[4] = (ang_tf-min_tf_rad)*((max_tf-min_tf)/(max_tf_rad-min_tf_rad))
-				#fpos[4] = clamp(fpos[4],min_tf,max_tf)
+				ang_tr = np.arctan2(handed_sign*thumb_ip_b[2],-thumb_ip_b[1])*180/np.pi
+				#mapthumb rotator
+				fpos[5] = linmap(ang_tr, outp_tr, inp_tr)
+				
+				
+				tip_to_ip_b = np.subtract(thumb_tip_b, thumb_ip_b)				
+				ip_to_mcp_b = np.subtract(thumb_ip_b, thumb_mcp_b)
+				ang_tf = vect_angle(tip_to_ip_b[0:3], ip_to_mcp_b[0:3])*180/np.pi
+				#map thumb flexor
+				fpos[4] = linmap(ang_tf, outp_tf, inp_tf)
 				
 				
 				for i in range(len(fpos)):

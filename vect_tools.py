@@ -67,8 +67,8 @@ def mag(v):
 """
 	linear mapping helper function
 """		
-def linmap(v, outmax, outmin, inmax,inmin):
-	return (v-inmin)*((outmax-outmin)/(inmax-inmin))
+def linmap(v, p_out, p_in):
+	return (v-p_in[0])*((p_out[1]-p_out[0])/(p_in[1]-p_in[0]))
 
 """
 	mediapipe landmark helper function.
