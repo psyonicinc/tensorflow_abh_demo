@@ -270,9 +270,6 @@ def runcv():
 					#map fingers
 								
 				
-				for i in range(len(fpos)):
-					fpos[i], warr[i] = py_sos_iir(fpos[i], warr[i], lpf_sos[0])
-				
 				"""
 					Override touching fingers with prebaked grips
 				"""
@@ -286,7 +283,11 @@ def runcv():
 					is_set_grip = 0
 				if(is_set_grip):
 					fpos = override_grip(fpos, grip_word)
+
 				
+				for i in range(len(fpos)):
+					fpos[i], warr[i] = py_sos_iir(fpos[i], warr[i], lpf_sos[0])
+								
 				#expose values to the plotting code
 				yield t, fpos[0], fpos[1], fpos[2], fpos[3], fpos[4], fpos[5]
 
