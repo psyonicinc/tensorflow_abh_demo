@@ -333,8 +333,8 @@ def runcv():
 			if cv2.waitKey(1) & 0xFF == 27:
 				break
 
-			#print (fps)
-			print(fpos)
+			print (fps)
+			
 	cap.release()
 	if port:
 		ser.close()
