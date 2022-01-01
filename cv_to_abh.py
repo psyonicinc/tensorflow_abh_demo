@@ -39,7 +39,8 @@ if not port:
 	Lower values of Wn -> more aggressive filtering.
 	Wn must be greater than 0 and less than nyquist (Fs/2).
 """
-lpf_sos = signal.iirfilter(2, Wn=3, btype='lowpass', analog=False, ftype='butter', output='sos', fs=30)
+lpf_sos = signal.iirfilter(2, Wn=3, btype='lowpass', analog=False, ftype='butter', output='sos', fs=30)	#filter for sending the finger data over
+lpf_fps_sos = signal.iirfilter(2, Wn=0.7, btype='lowpass', analog=False, ftype='butter', output='sos', fs=30)	#filter for the fps counter
 
 """
 	Program constants. Used for linear mapping offset/gain, etc.
@@ -127,6 +128,8 @@ def runcv():
 		warr = []
 		for f in fpos:
 			warr.append([0,0,0])
+		
+		warr_fps = [0,0,0]
 		
 		#paramters for grip overload
 		is_set_grip = 0
@@ -332,8 +335,9 @@ def runcv():
 
 			if cv2.waitKey(1) & 0xFF == 27:
 				break
-
-			print (fps)
+			
+			fpsfilt, warr_fps = py_sos_iir(fps, warr_fps, lpf_fps_sos[0])
+			print (fpsfilt)
 			
 	cap.release()
 	if port:
