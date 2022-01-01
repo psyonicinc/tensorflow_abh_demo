@@ -33,7 +33,7 @@ def farr_to_barr(farr):
 	1st is the misc. command
 	2nd is the checksum!
 """
-def send_misc(cmd):
+def create_misc_msg(cmd):
 	barr = []
 	barr.append( (struct.pack('<B',0x50))[0] );	#device ID
 	barr.append( (struct.pack('<B', cmd))[0] );	#command!

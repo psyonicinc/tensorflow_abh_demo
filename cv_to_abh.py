@@ -44,10 +44,9 @@ lpf_sos = signal.iirfilter(2, Wn=3, btype='lowpass', analog=False, ftype='butter
 """
 	Program constants. Used for linear mapping offset/gain, etc.
 """
-max_fng = 115
-min_fng = 10
-max_fng_rad = 2.85
-min_fng_rad = .1
+outp_fng = [5,100]
+inp_fng = [20, 130]
+outrange_fng = [5,110]
 
 outp_tr = [-5,-70]
 inp_tr = [-50, -75]
@@ -118,7 +117,9 @@ def runcv():
 		if(port):
 			ser = serial.Serial(port[0],'460800', timeout = 1)
 			print ("connected!")
-		
+			buf = create_misc_msg(0xC2) # cmd to enable upsampling of the thumb rotator
+			ser.write(buf)
+			
 		#initialize array used for writing out hand positions
 		fpos = [15,15,15,15,15,-15]
 		
@@ -266,7 +267,8 @@ def runcv():
 					pip_mcp_b = np.subtract(pip_b, mcp_b)
 					q1 = vect_angle(tip_pip_b, pip_mcp_b)
 					q2 = vect_angle(pip_mcp_b, mcp_b)
-					fpos[i] = (q1+q2)*180/np.pi
+					fng_ang = (q1+q2)*180/np.pi
+					fpos[i] = linmap(fng_ang, outp_fng, inp_fng)
 					#map fingers
 								
 				
@@ -331,8 +333,8 @@ def runcv():
 			if cv2.waitKey(1) & 0xFF == 27:
 				break
 
-			print (fps)
-			
+			#print (fps)
+			print(fpos)
 	cap.release()
 	if port:
 		ser.close()
