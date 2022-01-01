@@ -115,20 +115,11 @@ def runcv():
 		
 		#open serial port! 
 		#ser = serial.Serial('COM3','460800', timeout = 1)
-		try:
-			if(port):
-				try:
-					ser = serial.Serial(port[0],'460800', timeout = 1)
-					print ("connected!")
-				except:
-					print("failed to connect to com port")
-					port = ""
-				buf = create_misc_msg(0xC2) # cmd to enable upsampling of the thumb rotator
-				ser.write(buf)
-		except:
-			print("windows sucks")
-			port = ""
-		
+		if(port):
+			ser = serial.Serial(port[0],'460800', timeout = 1)
+			print ("connected!")
+			buf = create_misc_msg(0xC2) # cmd to enable upsampling of the thumb rotator
+			ser.write(buf)
 			
 		#initialize array used for writing out hand positions
 		fpos = [15,15,15,15,15,-15]
