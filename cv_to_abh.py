@@ -25,6 +25,16 @@ for p in com_ports_list:
 if not port:
 	print("No port found")
 
+if(port):
+	try:
+		ser = serial.Serial(port[0],'460800', timeout = 1)
+		print ("connected!")
+		buf = create_misc_msg(0xC2) # cmd to enable upsampling of the thumb rotator
+		ser.write(buf)
+	except:
+		port = ""
+		print("failed to connect")
+
 """
 	Design the low pass filter we will use on the angle outputs.
 	NOTE:
@@ -112,14 +122,6 @@ def runcv():
 			min_tracking_confidence=0.33) as hands:
 			
 		tprev = cv2.getTickCount()	
-		
-		#open serial port! 
-		#ser = serial.Serial('COM3','460800', timeout = 1)
-		if(port):
-			ser = serial.Serial(port[0],'460800', timeout = 1)
-			print ("connected!")
-			buf = create_misc_msg(0xC2) # cmd to enable upsampling of the thumb rotator
-			ser.write(buf)
 			
 		#initialize array used for writing out hand positions
 		fpos = [15,15,15,15,15,-15]
