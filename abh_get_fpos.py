@@ -40,7 +40,7 @@ class AbilityHandBridge:
 		self.outrange_tr = [-5,-110]
 
 		self.outp_tf = [0,60]
-		self.inp_tf = [0,40]
+		self.inp_tf = [15,-40]
 		self.outrange_tf = [10, 90]
 
 		#initialize array used for writing out hand positions
@@ -53,6 +53,9 @@ class AbilityHandBridge:
 		
 		self.hw_b = np.zeros((4,4))
 		self.hb_w = np.zeros((4,4))
+		self.hb_ip = np.zeros((4,4))
+		self.hip_b = np.zeros((4,4))
+		
 		self.handed_sign = 1
 		self.scale = 1
 		self.dist_to_thumb = 1
@@ -134,11 +137,22 @@ class AbilityHandBridge:
 		self.fpos[5] = linmap(ang_tr, self.outp_tr, self.inp_tr)
 
 
-		tip_to_ip_b = np.subtract(thumb_tip_b, thumb_ip_b)				
-		ip_to_mcp_b = np.subtract(thumb_ip_b, thumb_mcp_b)
-		ang_tf = vect_angle(tip_to_ip_b[0:3], ip_to_mcp_b[0:3])*180/np.pi
+		#tip_to_ip_b = np.subtract(thumb_tip_b, thumb_ip_b)				
+		#ip_to_mcp_b = np.subtract(thumb_ip_b, thumb_mcp_b)
+		#ang_tf_dp = vect_angle(tip_to_ip_b[0:3], ip_to_mcp_b[0:3])*180/np.pi
+		vx = np.subtract(thumb_ip_b, thumb_mcp_b)
+		vx = vx[0:3]
+		vx = vx / mag(vx)
+		vyref = thumb_cmc_b	# multiple options here. might be the best one
+		vyref = vyref[0:3]
+		vyref = vyref/mag(vyref)
+		self.hb_ip = ht_from_2_vectors(vx,vyref,thumb_ip_b[0:3])
+		self.hip_b = ht_inverse(self.hb_ip)
+		thumb_tip_ip = self.hip_b.dot(thumb_tip_b)
+		ang_tf = np.arctan2(thumb_tip_ip[1], thumb_tip_ip[0])*180/np.pi
 		#map thumb flexor
 		self.fpos[4] = linmap(ang_tf, self.outp_tf, self.inp_tf)
+		#self.fpos[4] = ang_tf
 
 
 		#compute all finger angles

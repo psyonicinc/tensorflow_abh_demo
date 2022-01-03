@@ -42,11 +42,37 @@ v2 = hx.dot(v1)
 
 tend = cv2.getTickCount()
 
-print(v2)
+#print(v2)
 #print (hw_b)
 #print (hb_w)
 #print(base4)
 #print(op_b)
 #print(tend-tstart)
+
+
+
+"""
+	
+	y cross z = x
+	z cross x = y
+	x cross y = z
+	
+	z cross y = -x
+	x cross z = -y
+	y cross x = -z
+	
+	
+"""
+
+x = np.array([1,0,0])
+y = np.array([0,1,0])
+z = np.array([0,0,1])
+print(np.cross(y,z))
+print(np.cross(z,x))
+print(np.cross(x,y))
+
+print(np.cross(z,y))
+print(np.cross(x,z))
+print(np.cross(y,x))
 
 

@@ -71,8 +71,6 @@ with mp_hands.Hands(
 	warr_fps = [0,0,0]
 	
 	#paramters for grip overload
-	is_set_grip = 0
-	grip_word = 0
 	abh = AbilityHandBridge()
 	while cap.isOpened():
 	
@@ -110,7 +108,7 @@ with mp_hands.Hands(
 				# Write the finger array out over UART to the hand!
 				msg = farr_to_barr(abh.fpos)
 				ser.write(msg)
-			
+			#print(abh.fpos[4])
 			
 			#draw landmarks of the hand we found
 			hand_landmarks = results.multi_hand_landmarks[0]

@@ -1,11 +1,11 @@
 
 pinch = [
-	[59.6, 1],	#index
+	[67.6, 1],	#index
 	[0, 0],		#middle
 	[0, 0],		#ring	
 	[0, 0],		#pinky
 	[44.38, 1],		#tflexor
-	[-72.53, 1]]		#trotator
+	[-80.53, 1]]		#trotator
 
 chuck = [
 	[64, 1],	#index

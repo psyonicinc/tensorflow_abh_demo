@@ -52,6 +52,20 @@ def ht_rotx(ang):
 		[0, 0, 0, 1]])
 	return h
 
+def ht_from_2_vectors(vx, vyref, origin):
+	ret = np.zeros((4,4))
+	
+	vz = np.cross(vx, vyref)
+	vz = vz/mag(vz)
+	vy = np.cross(vz, vx)
+	vy = vy/mag(vy)
+	ret[0:3, 0] = vx
+	ret[0:3, 1] = vy
+	ret[0:3, 2] = vz
+	ret[0:3, 3] = origin
+	ret[3, 0:4] = np.array([0,0,0,1])
+	return ret
+
 """
 	restrict val to lowerlim-upperlim
 """	
