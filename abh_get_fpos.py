@@ -37,7 +37,7 @@ class AbilityHandBridge:
 
 		self.outp_tr = [-5,-70]
 		self.inp_tr = [-50, -75]
-		self.outrange_tr = [-5,-110]
+		self.outrange_tr = [-500, -5]
 
 		self.outp_tf = [0,60]
 		self.inp_tf = [15,-40]
@@ -135,7 +135,7 @@ class AbilityHandBridge:
 		ang_tr = np.arctan2(self.handed_sign*thumb_ip_b[2],-thumb_ip_b[1])*180/np.pi
 		#mapthumb rotator
 		self.fpos[5] = linmap(ang_tr, self.outp_tr, self.inp_tr)
-
+		self.fpos[5] = clamp(self.fpos[5], self.outrange_tr[0], self.outrange_tr[1])
 
 		#tip_to_ip_b = np.subtract(thumb_tip_b, thumb_ip_b)				
 		#ip_to_mcp_b = np.subtract(thumb_ip_b, thumb_mcp_b)
