@@ -158,18 +158,38 @@ def image_thread():
 		image_ready = 1
 
 	cap.release()
+
+def display_thread():
+	global exit
+	global processing_done
+	global image_ready
+	global image
+		
+	while not exit:
+		while image_ready == 0:
+			pass
 			
 
+		# Flip the image horizontally for a selfie-view display.
+		cv2.imshow('MediaPipe Hands', cv2.flip(image, 1))
+		if cv2.waitKey(1) & 0xFF == 27:
+			exit = 1
+
+	
+	
 if __name__ == "__main__":
 	
 	t1 = threading.Thread(target=process_thread, args=())
 	t2 = threading.Thread(target=image_thread,args=())
+	t3 = threading.Thread(target=display_thread, args=())
 	
 	t1.start()
 	t2.start()
+	t3.start()
+	
 	t1.join()
 	t2.join()
-	
+	t3.join()
 	
 	
 	
