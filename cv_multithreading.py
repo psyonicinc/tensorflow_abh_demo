@@ -115,6 +115,8 @@ def image_thread():
 	
 	tprev = 0
 	warr_fps = [0,0,0]
+	lpf_fps_sos = signal.iirfilter(2, Wn=0.7, btype='lowpass', analog=False, ftype='butter', output='sos', fs=30)	#filter for the fps counter
+
 	try:
 		while not exit:
 				
