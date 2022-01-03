@@ -4,7 +4,7 @@ pinch = [
 	[0, 0],		#middle
 	[0, 0],		#ring	
 	[0, 0],		#pinky
-	[44.38, 1],		#tflexor
+	[55.38, 1],		#tflexor
 	[-80.53, 1]]		#trotator
 
 chuck = [
