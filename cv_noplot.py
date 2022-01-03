@@ -11,7 +11,7 @@ from scipy import signal
 import serial
 from serial.tools import list_ports
 from gestures import *
-from abh_get_fpos import get_fpos
+from abh_get_fpos import *
 
 """ 
 	Find a serial com port.
@@ -67,21 +67,13 @@ with mp_hands.Hands(
 		min_tracking_confidence=0.33) as hands:
 		
 	tprev = cv2.getTickCount()	
-		
-	#initialize array used for writing out hand positions
-	fpos = [15,15,15,15,15,-15]
-	
-	#initialize array used for filtering
-	warr = []
-	for f in fpos:
-		warr.append([0,0,0])
-	
+			
 	warr_fps = [0,0,0]
 	
 	#paramters for grip overload
 	is_set_grip = 0
 	grip_word = 0
-
+	abh = AbilityHandBridge()
 	while cap.isOpened():
 	
 		ts = cv2.getTickCount()
@@ -112,25 +104,11 @@ with mp_hands.Hands(
 			#log time for plotting
 			t = time.time()
 			
-			fpos, warr, hw_b, hb_w, handed_sign, scale, dist_to_thumb = get_fpos(results, mp_hands, fpos, warr)
-			
-			"""
-				Override touching fingers with prebaked grips
-			"""
-			word = 0
-			for i in range(0,4):
-				word |= (dist_to_thumb[i] < 2.7) << i
-			if word != 0 and is_set_grip == 0 and fpos[5] < -40:
-				is_set_grip = 1
-				grip_word = word
-			elif word == 0:
-				is_set_grip = 0
-			if(is_set_grip):
-				fpos = override_grip(fpos, grip_word)
-
+			#fpos, warr, hw_b, hb_w, handed_sign, scale, dist_to_thumb = get_fpos(results, mp_hands, fpos, warr)
+			abh.update(results, mp_hands)
 			if port:
 				# Write the finger array out over UART to the hand!
-				msg = farr_to_barr(fpos)
+				msg = farr_to_barr(abh.fpos)
 				ser.write(msg)
 			
 			
@@ -145,9 +123,9 @@ with mp_hands.Hands(
 
 			#render a static point in the base frame of the model. Visualization of the position-orientation accuracy.
 			#Point should be just in front of the palm. Compensated for handedness
-			static_point_b = np.array([4.16, 1.05, -1.47*handed_sign, 1])*scale			
+			static_point_b = np.array([4.16, 1.05, -1.47*abh.handed_sign, 1])*abh.scale			
 			static_point_b[3] = 1	#remove scaling that was applied to the immutable '1'
-			neutral_thumb_w = hw_b.dot(static_point_b)	#get dot position in world coordinates for a visual tag/reference				
+			neutral_thumb_w = abh.hw_b.dot(static_point_b)	#get dot position in world coordinates for a visual tag/reference				
 			l_list = landmark_pb2.NormalizedLandmarkList(
 				landmark = [
 					v4_to_landmark(neutral_thumb_w)
