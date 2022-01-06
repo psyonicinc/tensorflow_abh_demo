@@ -68,8 +68,8 @@ def process_thread():
 	with mp_hands.Hands(
 		max_num_hands=1,
 		model_complexity=0,
-		min_detection_confidence=0.5,
-		min_tracking_confidence=0.33) as hands:
+		min_detection_confidence=0.66,
+		min_tracking_confidence=0.66) as hands:
 		
 		abh = AbilityHandBridge()
 	
@@ -80,7 +80,7 @@ def process_thread():
 					
 			#process hands
 			image.flags.writeable = False	#improves performance
-			#image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+			image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 			results = hands.process(image)
 			
 			#convert positions if hand is found

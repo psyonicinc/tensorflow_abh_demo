@@ -104,7 +104,7 @@ def runcv():
 			max_num_hands=1,
 			model_complexity=0,
 			min_detection_confidence=0.5,
-			min_tracking_confidence=0.33) as hands:
+			min_tracking_confidence=0.5) as hands:
 			
 		tprev = cv2.getTickCount()	
 			
@@ -129,13 +129,13 @@ def runcv():
 			# pass by reference.
 			image.flags.writeable = False
 			
-			#image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+			image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 						
 			results = hands.process(image)
 			
 			
 			# Draw the hand annotations on the image.
-			#image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+			image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
 			if results.multi_hand_landmarks:
 				
 				#log time for plotting
