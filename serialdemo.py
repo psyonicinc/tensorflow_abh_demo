@@ -8,26 +8,7 @@ import time
 """ 
 	Find a serial com port.
 """
-com_ports_list = list(list_ports.comports())
-port = ""
-ser = []
-for p in com_ports_list:
-	if(p):
-		port = p
-		print("Found:", port)
-		break
-if not port:
-	print("No port found")
-
-if(port):
-	try:
-		ser = serial.Serial(port[0],'460800', timeout = 1)
-		print ("connected!")
-		buf = create_misc_msg(0xC2) # cmd to enable upsampling of the thumb rotator
-		ser.write(buf)
-	except:
-		port = ""
-		print("failed to connect")
+ser = serial.Serial("COM3",'460800', timeout = 1)
 
 
 fpos = [15., 15., 15., 15., 15., -15.]
