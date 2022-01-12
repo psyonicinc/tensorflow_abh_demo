@@ -138,6 +138,8 @@ with mp_hands.Hands(
 			
 			
 		# Flip the image horizontally for a selfie-view display.
+		cv2.namedWindow('MediaPipe Hands', cv2.WINDOW_FREERATIO)
+		cv2.setWindowProperty('MediaPipe Hands',  cv2.WND_PROP_ASPECT_RATIO, cv2.WINDOW_FREERATIO)
 		cv2.imshow('MediaPipe Hands', cv2.flip(image, 1))
 
 		if cv2.waitKey(1) & 0xFF == 27:
