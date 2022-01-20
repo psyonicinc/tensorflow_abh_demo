@@ -29,8 +29,8 @@ if not port:
 
 if(port):
 	try:
-		ser = serial.Serial(port[0],'460800', timeout = 1)
-		print ("connected!")
+		ser = serial.Serial("COM5",'460800', timeout = 1)
+		print ("connected! - COM5")
 		buf = create_misc_msg(0xC2) # cmd to enable upsampling of the thumb rotator
 		ser.write(buf)
 	except:
