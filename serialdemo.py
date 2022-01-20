@@ -4,7 +4,11 @@ from abh_api_core import farr_to_barr
 from abh_api_core import create_misc_msg
 import math
 import time
-import ctypes
+import platform
+import sys
+
+
+printFailures = True #True - will print out every error that happens and run it happens on. False, only print totals at end
 
 #ser = serial.Serial('COM4','460800', timeout = 1)
 """ 
@@ -23,11 +27,19 @@ if not port:
 
 if(port):
 	try:
-		ser = serial.Serial('/dev/ttyUSB0','460800', timeout = 0.005, inter_byte_timeout=0.001)
+		if platform.system() == 'Windows':
+			ser = serial.Serial('COM5','460800', timeout = 0.005) #, inter_byte_timeout=0.001)
+		elif plaform.system() == 'Linux':
+			ser = serial.Serial('/dev/ttyUSB0','460800', timeout = 0.005, inter_byte_timeout=0.001)
+		else:
+			raise Exception("Unknown OS, supports Windows and Linux")
+			 
 		print ("connected!")
 		ser.reset_input_buffer()
 		buf = create_misc_msg(0xC2) # cmd to enable upsampling of the thumb rotator
 		ser.write(buf)
+		time.sleep(0.001)
+		ser.reset_input_buffer()
 	except Exception as e:
 		port = ""
 		print(str(e))
@@ -36,14 +48,19 @@ if(port):
 
 fpos = [15., 15., 15., 15., 15., -15.]
 try:
-	start = time.perf_counter()
-	print("Start at: " + str(start))
+	loops = 1000
+	if len(sys.argv) > 1:
+		loops = int(sys.argv[1])
+
 	count = 0
 	timeouts = 0
 	badChecksums = 0
 	consecutiveChecksums = 0
-	while count < 100000:
+	start = time.perf_counter()
+	print("Start at: " + str(start))
+	while count < loops:
 		count+=1
+		loopStart =  time.perf_counter_ns()
 		#print(str(count) +": ", end='')
 		#fpos = [15., 15., 15., 15., 15., -15.]
 		for i in range(0, len(fpos)):
@@ -59,21 +76,19 @@ try:
 				sum = (sum + byte)%256
 				
 			if sum != 0:
-				print(str(count) +": " +"Check Sum Fail: " + str(sum))
+				if printFailures:
+					print(str(count) +": " +"Check Sum Fail: " + str(sum))
 				badChecksums+=1
 				ser.reset_input_buffer()
 		else:
-			print(str(count) +": "+"Timeout!! "+ str(len(data)))
+			if printFailures:
+				print(str(count) +": "+"Timeout!! "+ str(len(data)))
 			timeouts+=1
 			ser.reset_input_buffer()
 		
-		#i = 0
-		#while i < 500000:
-		#	i += 1
-		#while time.process_time_ns() < (startTime + 50):
+		#while  time.perf_counter_ns() < (loopStart + 1000000):
 		#	pass
-	
-		#time.sleep(0.0004)
+		#time.sleep(0.0004)  #windows sleep is not precise enough for this
 
 		
 	end = time.perf_counter()
