@@ -9,6 +9,7 @@ import sys
 from threading import Lock, Thread
 from dataclasses import dataclass
 import copy
+import struct
 
 
 class AbilityHand:
@@ -86,9 +87,10 @@ def handCommunication(hand, loopsToDo):
 	count = 0
 	timeouts = 0
 	badChecksums = 0
+	start = time.perf_counter()
 	while count < loopsToDo:
 		count += 1
-		print("Run: " + str(count))
+		#print("Run: " + str(count))
 		sum = 0
 		msg = farr_to_barr(hand.getPositions())
 		ser.write(msg)
@@ -102,12 +104,15 @@ def handCommunication(hand, loopsToDo):
 				ser.reset_input_buffer()
 		else:
 			timeouts+=1
+			sum = -1
 			ser.reset_input_buffer()
 		hand.setData(sum, data)
 		
+	end = time.perf_counter()
 	print("Total Number of Runs: " + str(count))
 	print("Timeouts: " + str(timeouts))
 	print("Checksum failures: " + str(badChecksums))
+	print("Total Time: " + str(end-start))
 		
 
 	
@@ -115,18 +120,28 @@ def main():
 	print("Starting...")
 	hand = AbilityHand()
 	fpos = hand.getPositions()
-	t1 = Thread(target=handCommunication, args=(hand, 10000,))
+	t1 = Thread(target=handCommunication, args=(hand, 100000,))
 	t1.start()
+	positions = []
 	while(t1.is_alive()):
-		print("Calc Data")
+		#print("Calc Data")
 		for i in range(0, len(fpos)):
 			ft = time.time()*3 + i
 			fpos[i] = (.5*math.sin(ft)+.5)*45+15
 		fpos[5] = -fpos[5]
 		hand.setPositions(fpos)
-	
+		sum, data = hand.getData()
+		if sum !=0:
+			print("Checksum or timeout")
+			positions.append(0.0)
+		else:
+			position = struct.unpack('f', data[0:4])
+			#positions.append(position)
+			#print("First position is: " + str(position))
+		time.sleep(0.001)
+
 	print("Done!")
-	
+	#print(str(positions))
 
 
 if __name__ == "__main__":
