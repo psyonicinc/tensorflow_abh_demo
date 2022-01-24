@@ -28,25 +28,16 @@ def main():
 		serialLock = Lock()
 		hand = AbilityHand(ser, serialLock)
 		fpos = hand.getPositions()
-		t1 = Thread(target=hand.serialWrite, args=(1000,))
-		t1.start()
-		positions = []
-		while(t1.is_alive()):
-			#print("Calc Data")
-			for i in range(0, len(fpos)):
-				ft = time.time()*3 + i
-				fpos[i] = (.5*math.sin(ft)+.5)*45+15
-			fpos[5] = -fpos[5]
-			hand.setPositions(fpos)
-			sum, data = hand.getRawData()
-			if sum !=0:
-				#print("Checksum or timeout")
-				positions.append(0.0)
-			else:
-				position = struct.unpack('f', data[0:4])
-				#positions.append(position)
-				#print("First position is: " + str(position))
-			time.sleep(0.001)
+		hand.serialWrite(1)
+		
+		sum, data = hand.getRawData()
+		sum2, pos, press, sbits = hand.getProcessedData()
+		
+		print("Sums: " + str(sum) + "  " + str(sum2))
+		print(data.hex())
+		print("Pos: " + str(pos))
+		print("Psr: " + str(press))
+		print("Bits: " + str(sbits))
 
 		hand.runStats()
 		print("Done!")
