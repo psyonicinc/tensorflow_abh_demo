@@ -28,6 +28,43 @@ def farr_to_barr(farr):
 	return barr
 
 """
+	Test for position control mode
+"""
+def farr_to_dposition(farr, tx_option):
+	barr = [];
+	barr.append( (struct.pack('<B',0x50))[0] );	#device ID
+	barr.append( (struct.pack('<B',0x10 + tx_option))[0] );	#control mode
+
+	for fp in farr:
+		fscaled = fp * 32767 / 150
+		b2 = struct.pack('<h', int(fscaled));
+		for b in b2:
+			barr.append(b)
+
+	# last step: calculate the checksum and load it into the final byte
+	sum = 0
+	for b in barr:
+		sum = sum + b
+	chksum = (-sum) & 0xFF;
+	barr.append(chksum)
+	return barr
+
+"""
+	Test for voltage control mode
+"""
+def farr_to_vduty(farr):
+	pass
+
+"""
+	Test for current control mode
+"""
+def farr_to_dcurrent(farr):
+	pass
+
+
+
+
+"""
 	Sends a 3 byte payload.
 	0th is device id
 	1st is the misc. command
