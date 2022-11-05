@@ -13,6 +13,10 @@ from serial.tools import list_ports
 from gestures import *
 from abh_get_fpos import *
 
+#set this to 0 if you want to stop sending uart clinical grip commands
+use_grip_cmds = 0
+
+
 """ 
 	Find all serial ports.
 """
@@ -122,8 +126,17 @@ if(len(slist) > 0 and len(slist) <= 2):
 					#fpos, warr, hw_b, hb_w, handed_sign, scale, dist_to_thumb = get_fpos(results, mp_hands, fpos, warr)
 					abhlist[idx].update(mp_hands, results.multi_hand_landmarks[idx].landmark, results.multi_handedness[idx].classification[0].index)
 					#if port:
-					# Write the finger array out over UART to the hand!
-					msg = farr_to_barr(abhlist[idx].fpos)
+					
+					if(abhlist[idx].is_set_grip == 1 and (abhlist[idx].grip_word == 1 or abhlist[idx].grip_word == 3) and use_grip_cmds):
+						if(abhlist[idx].grip_word == 1):
+							msg = send_grip_cmd(0x50, 0x03, 0xFF)
+						elif(abhlist[idx].grip_word == 3):
+							msg = send_grip_cmd(0x50, 0x04, 0xFF)
+					else:						
+						# Write the finger array out over UART to the hand!
+						msg = farr_to_barr(0x50, abhlist[idx].fpos)
+						
+						
 					slist[results.multi_handedness[idx].classification[0].index].write(msg)
 					#print(abh.fpos[4])
 
@@ -163,7 +176,7 @@ if(len(slist) > 0 and len(slist) <= 2):
 				break
 			
 			fpsfilt, warr_fps = py_sos_iir(fps, warr_fps, lpf_fps_sos[0])
-			#print (fpsfilt)
+			print (fpsfilt)
 
 	cap.release()
 	if port:
