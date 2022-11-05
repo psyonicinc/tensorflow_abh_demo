@@ -63,36 +63,36 @@ class AbilityHandBridge:
 		self.grip_word = 0
 		self.is_set_grip = 0
 		
-	def update(self, results, mp_hands):
+	def update(self, mp_hands, landmark, index_handedness):
 
 		#get the handedness
 		#index is 1/"Right", 0/"Left". This has something to do with the image being flipped, but we're just gonna flip the label association here
-		if(results.multi_handedness[0].classification[0].index == 1):	
+		if(index_handedness == 1):	
 			self.handed_sign = 1 #1 for left, -1 for right. Apply to Z component when doing arctan2
 		else:
 			self.handed_sign = -1
 
 		#load landmarks into np.arrays, so we can use np to perform vectorized math operations
-		base = to_vect(results.multi_hand_landmarks[0].landmark[mp_hands.HandLandmark.WRIST])
-		index_mcp = to_vect(results.multi_hand_landmarks[0].landmark[mp_hands.HandLandmark.INDEX_FINGER_MCP])
-		middle_mcp = to_vect(results.multi_hand_landmarks[0].landmark[mp_hands.HandLandmark.MIDDLE_FINGER_MCP])
-		ring_mcp = to_vect(results.multi_hand_landmarks[0].landmark[mp_hands.HandLandmark.RING_FINGER_MCP])
-		pinky_mcp = to_vect(results.multi_hand_landmarks[0].landmark[mp_hands.HandLandmark.PINKY_MCP])
+		base = to_vect(landmark[mp_hands.HandLandmark.WRIST])
+		index_mcp = to_vect(landmark[mp_hands.HandLandmark.INDEX_FINGER_MCP])
+		middle_mcp = to_vect(landmark[mp_hands.HandLandmark.MIDDLE_FINGER_MCP])
+		ring_mcp = to_vect(landmark[mp_hands.HandLandmark.RING_FINGER_MCP])
+		pinky_mcp = to_vect(landmark[mp_hands.HandLandmark.PINKY_MCP])
 
-		index_pip = to_vect(results.multi_hand_landmarks[0].landmark[mp_hands.HandLandmark.INDEX_FINGER_PIP])
-		middle_pip = to_vect(results.multi_hand_landmarks[0].landmark[mp_hands.HandLandmark.MIDDLE_FINGER_PIP])
-		ring_pip = to_vect(results.multi_hand_landmarks[0].landmark[mp_hands.HandLandmark.RING_FINGER_PIP])
-		pinky_pip = to_vect(results.multi_hand_landmarks[0].landmark[mp_hands.HandLandmark.PINKY_PIP])
+		index_pip = to_vect(landmark[mp_hands.HandLandmark.INDEX_FINGER_PIP])
+		middle_pip = to_vect(landmark[mp_hands.HandLandmark.MIDDLE_FINGER_PIP])
+		ring_pip = to_vect(landmark[mp_hands.HandLandmark.RING_FINGER_PIP])
+		pinky_pip = to_vect(landmark[mp_hands.HandLandmark.PINKY_PIP])
 
-		index_tip = to_vect(results.multi_hand_landmarks[0].landmark[mp_hands.HandLandmark.INDEX_FINGER_TIP])
-		middle_tip = to_vect(results.multi_hand_landmarks[0].landmark[mp_hands.HandLandmark.MIDDLE_FINGER_TIP])
-		ring_tip = to_vect(results.multi_hand_landmarks[0].landmark[mp_hands.HandLandmark.RING_FINGER_TIP])
-		pinky_tip = to_vect(results.multi_hand_landmarks[0].landmark[mp_hands.HandLandmark.PINKY_TIP])			
+		index_tip = to_vect(landmark[mp_hands.HandLandmark.INDEX_FINGER_TIP])
+		middle_tip = to_vect(landmark[mp_hands.HandLandmark.MIDDLE_FINGER_TIP])
+		ring_tip = to_vect(landmark[mp_hands.HandLandmark.RING_FINGER_TIP])
+		pinky_tip = to_vect(landmark[mp_hands.HandLandmark.PINKY_TIP])			
 
-		thumb_tip = to_vect(results.multi_hand_landmarks[0].landmark[mp_hands.HandLandmark.THUMB_TIP])
-		thumb_cmc = to_vect(results.multi_hand_landmarks[0].landmark[mp_hands.HandLandmark.THUMB_CMC])
-		thumb_mcp = to_vect(results.multi_hand_landmarks[0].landmark[mp_hands.HandLandmark.THUMB_MCP])
-		thumb_ip = to_vect(results.multi_hand_landmarks[0].landmark[mp_hands.HandLandmark.THUMB_IP])
+		thumb_tip = to_vect(landmark[mp_hands.HandLandmark.THUMB_TIP])
+		thumb_cmc = to_vect(landmark[mp_hands.HandLandmark.THUMB_CMC])
+		thumb_mcp = to_vect(landmark[mp_hands.HandLandmark.THUMB_MCP])
+		thumb_ip = to_vect(landmark[mp_hands.HandLandmark.THUMB_IP])
 
 		#get scale. scale is equal to the distance (in 0-1 generalized pixel coordinates) 
 		# between the base/wrist position and the MCP position of the index finger

@@ -31,8 +31,7 @@ for p in port:
 	except:
 		print("failded.")
 		pass
-		# port = ""
-		# print("failed to connect")
+print( "found ", len(slist), "ports.")
 		
 		
 
@@ -45,22 +44,27 @@ fpos = [15., 15., 15., 15., 15., -15.]
 try:
 	while 1:
 		
-		for i in range(0, len(fpos)):
-			ft = time.time()*3 + i*(2*np.pi)/12
-			fpos[i] = (.5*math.sin(ft)+.5)*45+15
-		fpos[5] = -fpos[5]
+		try:
+			for i in range(0, len(fpos)):
+				ft = time.time()*3 + i*(2*np.pi)/12
+				fpos[i] = (.5*math.sin(ft)+.5)*45+15
+			fpos[5] = -fpos[5]
+			
+			msg = farr_to_barr(fpos)
+			slist[0].write(msg)
+		except:
+			pass
 		
-		msg = farr_to_barr(fpos)
-		slist[0].write(msg)
-
-
-		for i in range(0, len(fpos)):
-			ft = time.time()*3 + (i+6)*(2*np.pi)/12
-			fpos[i] = (.5*math.sin(ft)+.5)*45+15
-		fpos[5] = -fpos[5]
-		
-		msg = farr_to_barr(fpos)
-		slist[1].write(msg)
+		try:		
+			for i in range(0, len(fpos)):
+				ft = time.time()*3 + (i+6)*(2*np.pi)/12
+				fpos[i] = (.5*math.sin(ft)+.5)*45+15
+			fpos[5] = -fpos[5]
+			
+			msg = farr_to_barr(fpos)
+			slist[1].write(msg)
+		except:
+			pass
 	
 		time.sleep(.001)
 		
