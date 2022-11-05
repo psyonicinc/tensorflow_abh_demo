@@ -166,7 +166,7 @@ if __name__ == "__main__":
 							# Write the finger array out over UART to the hand!
 							msg = farr_to_barr(0x50, abhlist[idx].fpos)
 							
-						print(msg)
+						#print(msg)
 						slist[ser_idx].write(msg)
 						#print(abh.fpos[4])
 
