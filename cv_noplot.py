@@ -104,7 +104,8 @@ if __name__ == "__main__":
 			for i in range(0,n):
 				abh = AbilityHandBridge()
 				abhlist.append(abh)
-				
+
+			send_upsampling_msg_ts = 0
 			while cap.isOpened():
 			
 				ts = cv2.getTickCount()
@@ -166,9 +167,13 @@ if __name__ == "__main__":
 							# Write the finger array out over UART to the hand!
 							msg = farr_to_barr(0x50, abhlist[idx].fpos)
 							
-						#print(msg)
+
+						if(ts > send_upsampling_msg_ts):
+							send_upsampling_msg_ts = ts + 20
+							msg = create_misc_msg(0x50, 0xC2)
+							print("sending: ", [ hex(b) for b in msg ])
+
 						slist[ser_idx].write(msg)
-						#print(abh.fpos[4])
 
 						#draw landmarks of the hand we found
 						hand_landmarks = results.multi_hand_landmarks[idx]
