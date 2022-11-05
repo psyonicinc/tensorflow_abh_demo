@@ -53,6 +53,12 @@ if __name__ == "__main__":
 			pass
 
 	print( "found ", len(slist), "ports.")
+	for s in slist:
+		buf = create_misc_msg(0x50, 0xC2) # cmd to enable upsampling of the thumb rotator
+		print ("writing thumb filter message on com port: ", s)
+		s.write(buf)
+
+	
 	#act only if you have 1 or more serial ports connected.
 	if(len(slist) > 0 and len(slist) <= 2):
 		
@@ -60,6 +66,9 @@ if __name__ == "__main__":
 		
 		lpf_fps_sos = signal.iirfilter(2, Wn=0.7, btype='lowpass', analog=False, ftype='butter', output='sos', fs=30)	#filter for the fps counter
 
+
+		prev_cmd_was_grip = [0,0]
+		
 		"""
 			Mediapipe setup/initialization
 		"""
@@ -131,22 +140,34 @@ if __name__ == "__main__":
 					for idx in range(0 , num_writes):
 						#log time for plotting
 						t = time.time()
+						ser_idx = results.multi_handedness[idx].classification[0].index
 						
 						#fpos, warr, hw_b, hb_w, handed_sign, scale, dist_to_thumb = get_fpos(results, mp_hands, fpos, warr)
 						abhlist[idx].update(mp_hands, results.multi_hand_landmarks[idx].landmark, results.multi_handedness[idx].classification[0].index)
 						#if port:
 						
 						if(abhlist[idx].is_set_grip == 1 and (abhlist[idx].grip_word == 1 or abhlist[idx].grip_word == 3) and use_grip_cmds == 1):
+							grip = 0x00
 							if(abhlist[idx].grip_word == 1):
-								msg = send_grip_cmd(0x50, 0x03, 0xFF)
+								grip = 0x3
 							elif(abhlist[idx].grip_word == 3):
-								msg = send_grip_cmd(0x50, 0x04, 0xFF)
+								grip = 0x4
+							if(prev_cmd_was_grip[ser_idx] == 0):
+								msg = send_grip_cmd(0x50, grip, 0xFF)
+								slist[ser_idx].write(msg)
+								time.sleep(0.01)
+								msg = send_grip_cmd(0x50, 0x00, 0xFF)
+								slist[ser_idx].write(msg)
+								time.sleep(0.01)
+								prev_cmd_was_grip[ser_idx] = 1
+							msg = send_grip_cmd(0x50, grip, 0xFF)
 						else:						
+							prev_cmd_was_grip[idx] = 0
 							# Write the finger array out over UART to the hand!
 							msg = farr_to_barr(0x50, abhlist[idx].fpos)
 							
-							
-						slist[results.multi_handedness[idx].classification[0].index].write(msg)
+						print(msg)
+						slist[ser_idx].write(msg)
 						#print(abh.fpos[4])
 
 						#draw landmarks of the hand we found
