@@ -112,7 +112,10 @@ if(len(slist) > 0 and len(slist) <= 2):
 			
 			if results.multi_hand_landmarks:
 				
-				for idx, hand_landmarks in enumerate(results.multi_hand_landmarks):
+				num_writes = 1
+				if(len(results.multi_hand_landmarks) == 2 and results.multi_handedness[0].classification[0].index != results.multi_handedness[1].classification[0].index):
+					num_writes = 2
+				for idx in range(0 , num_writes):
 					#log time for plotting
 					t = time.time()
 					
@@ -121,7 +124,7 @@ if(len(slist) > 0 and len(slist) <= 2):
 					#if port:
 					# Write the finger array out over UART to the hand!
 					msg = farr_to_barr(abhlist[idx].fpos)
-					slist[idx].write(msg)
+					slist[results.multi_handedness[idx].classification[0].index].write(msg)
 					#print(abh.fpos[4])
 
 					#draw landmarks of the hand we found
