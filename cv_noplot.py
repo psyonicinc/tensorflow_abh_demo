@@ -18,6 +18,8 @@ if __name__ == "__main__":
 		
 	parser = argparse.ArgumentParser(description='Hand CV Demo Parser')
 	parser.add_argument('--do_grip_cmds' , help="Include flag for using grip commands for grip recognitions", action='store_true')
+	parser.add_argument('--hardcode_com_port', help="for aadeel's bad computer", action='store_true')
+	parser.add_argument('--camera_capture', type=int, help="opencv capture number", default=0)
 	args = parser.parse_args()
 	
 	use_grip_cmds = args.do_grip_cmds
@@ -26,32 +28,40 @@ if __name__ == "__main__":
 	else:
 		print("Using hardloaded commands")
 	
-	""" 
-		Find all serial ports.
-	"""
-	com_ports_list = list(list_ports.comports())
-	port = []
-	slist = []
-	for p in com_ports_list:
-		if(p):
-			pstr = ""
-			pstr = p
-			port.append(pstr)
-			print("Found:", pstr)
-	if not port:
-		print("No port found")
+	slist = []	
+	if(args.hardcode_com_port == False):
+		""" 
+			Find all serial ports.
+		"""
+		com_ports_list = list(list_ports.comports())
+		port = []
 
-	for p in port:
-		try:
-			ser = []
-			ser = (serial.Serial(p[0],'460800', timeout = 1))
-			slist.append(ser)
-			print ("connected!", p)
-			# print ("found: ", p)
-		except:
-			print("failded.")
-			pass
+		for p in com_ports_list:
+			if(p):
+				pstr = ""
+				pstr = p
+				port.append(pstr)
+				print("Found:", pstr)
+		if not port:
+			print("No port found")
 
+		for p in port:
+			try:
+				ser = []
+				ser = (serial.Serial(p[0],'460800', timeout = 1))
+				slist.append(ser)
+				print ("connected!", p)
+				# print ("found: ", p)
+			except:
+				print("failded.")
+				pass
+	else:
+		ser = (serial.Serial('COM4','460800', timeout = 1))
+		slist.append(ser)
+		ser = (serial.Serial('COM7','460800', timeout = 1))
+		slist.append(ser)
+		
+	
 	print( "found ", len(slist), "ports.")
 	for s in slist:
 		buf = create_misc_msg(0x50, 0xC2) # cmd to enable upsampling of the thumb rotator
@@ -84,7 +94,7 @@ if __name__ == "__main__":
 		"""
 
 		# For webcam input:
-		cap = cv2.VideoCapture(0)
+		cap = cv2.VideoCapture(args.camera_capture)
 		cap.set(cv2.CAP_PROP_FPS, 90)
 		fps = int(cap.get(5))
 		print("fps:",fps)
@@ -217,5 +227,5 @@ if __name__ == "__main__":
 				#print (fpsfilt)
 
 		cap.release()
-		if port:
-			ser.close()
+		for s in slist:
+			s.close()
