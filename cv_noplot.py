@@ -166,12 +166,6 @@ if __name__ == "__main__":
 							prev_cmd_was_grip[idx] = 0
 							# Write the finger array out over UART to the hand!
 							msg = farr_to_barr(0x50, abhlist[idx].fpos)
-							
-
-						if(ts > send_upsampling_msg_ts):
-							send_upsampling_msg_ts = ts + 20
-							msg = create_misc_msg(0x50, 0xC2)
-							print("sending: ", [ hex(b) for b in msg ])
 
 						slist[ser_idx].write(msg)
 
@@ -209,6 +203,15 @@ if __name__ == "__main__":
 
 				if cv2.waitKey(1) & 0xFF == 27:
 					break
+				
+				t_seconds = ts/cv2.getTickFrequency()
+				if(t_seconds > send_upsampling_msg_ts):
+					send_upsampling_msg_ts = t_seconds + 20
+					for i in range(0,n):
+						msg = create_misc_msg(0x50, 0xC2)
+						print("sending: ", [ hex(b) for b in msg ], "to ser device ", i)
+						slist[i].write(msg)
+				
 				
 				fpsfilt, warr_fps = py_sos_iir(fps, warr_fps, lpf_fps_sos[0])
 				#print (fpsfilt)
