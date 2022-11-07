@@ -18,7 +18,7 @@ if __name__ == "__main__":
 		
 	parser = argparse.ArgumentParser(description='Hand CV Demo Parser')
 	parser.add_argument('--do_grip_cmds' , help="Include flag for using grip commands for grip recognitions", action='store_true')
-	parser.add_argument('--hardcode_com_port', help="for aadeel's bad computer", action='store_true')
+	parser.add_argument('--CP210x_only', help="for aadeel's bad computer", action='store_true')
 	parser.add_argument('--camera_capture', type=int, help="opencv capture number", default=0)
 	args = parser.parse_args()
 	
@@ -29,37 +29,32 @@ if __name__ == "__main__":
 		print("Using hardloaded commands")
 	
 	slist = []	
-	if(args.hardcode_com_port == False):
-		""" 
-			Find all serial ports.
-		"""
-		com_ports_list = list(list_ports.comports())
-		port = []
+	""" 
+		Find all serial ports.
+	"""
+	com_ports_list = list(list_ports.comports())
+	port = []
 
-		for p in com_ports_list:
-			if(p):
-				pstr = ""
-				pstr = p
-				port.append(pstr)
-				print("Found:", pstr)
-		if not port:
-			print("No port found")
+	for p in com_ports_list:
+		if(p):
+			pstr = ""
+			pstr = p
+			port.append(pstr)
+			print("Found:", pstr)
+	if not port:
+		print("No port found")
 
-		for p in port:
-			try:
-				ser = []
+	for p in port:
+		try:
+			ser = []
+			if( (args.CP210x_only == False) or  (args.CP210x_only == True and p[1].find('CP210x') != -1) ):
 				ser = (serial.Serial(p[0],'460800', timeout = 1))
 				slist.append(ser)
 				print ("connected!", p)
-				# print ("found: ", p)
-			except:
-				print("failded.")
-				pass
-	else:
-		ser = (serial.Serial('COM4','460800', timeout = 1))
-		slist.append(ser)
-		ser = (serial.Serial('COM7','460800', timeout = 1))
-		slist.append(ser)
+			# print ("found: ", p)
+		except:
+			print("failded.")
+			pass
 		
 	
 	print( "found ", len(slist), "ports.")
@@ -152,6 +147,8 @@ if __name__ == "__main__":
 						#log time for plotting
 						t = time.time()
 						ser_idx = results.multi_handedness[idx].classification[0].index
+						if(n == 1):
+							ser_idx = 0		#default to 0 if there's only one device connected
 						
 						#fpos, warr, hw_b, hb_w, handed_sign, scale, dist_to_thumb = get_fpos(results, mp_hands, fpos, warr)
 						abhlist[idx].update(mp_hands, results.multi_hand_landmarks[idx].landmark, results.multi_handedness[idx].classification[0].index)
@@ -216,7 +213,7 @@ if __name__ == "__main__":
 				
 				t_seconds = ts/cv2.getTickFrequency()
 				if(t_seconds > send_upsampling_msg_ts):
-					send_upsampling_msg_ts = t_seconds + 20
+					send_upsampling_msg_ts = t_seconds + 10
 					for i in range(0,n):
 						msg = create_misc_msg(0x50, 0xC2)
 						print("sending: ", [ hex(b) for b in msg ], "to ser device ", i)
@@ -224,7 +221,7 @@ if __name__ == "__main__":
 				
 				
 				fpsfilt, warr_fps = py_sos_iir(fps, warr_fps, lpf_fps_sos[0])
-				#print (fpsfilt)
+				print (fpsfilt)
 
 		cap.release()
 		for s in slist:

@@ -1,1 +1,1 @@
-python cv_noplot.py --hardcode_com_port --camera_capture 1
+python cv_noplot.py --CP210x_only --camera_capture 1
