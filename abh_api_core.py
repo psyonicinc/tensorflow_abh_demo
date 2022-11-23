@@ -1,5 +1,16 @@
 import struct
 
+def udp_pkt(farr):
+	barr = []
+	for fp in farr:
+		b4 = struct.pack('<f', fp)
+		for b in b4:
+			barr.append(b)
+	b4 = struct.pack('<L',3000)
+	for b in b4:
+		barr.append(b)
+	return barr
+
 """
 """
 def compute_checksum(barr):

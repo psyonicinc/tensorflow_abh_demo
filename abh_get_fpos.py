@@ -43,6 +43,10 @@ class AbilityHandBridge:
 		self.inp_tf = [15,-40]
 		self.outrange_tf = [10, 90]
 
+		#if nonzero, will do pinch lock
+		self.lock_pinch = True
+		self.filter_fpos = True
+		
 		#initialize array used for writing out hand positions
 		self.fpos = [15,15,15,15,15,-15]
 		
@@ -183,22 +187,24 @@ class AbilityHandBridge:
 			fng_ang = (q1+q2)*180/np.pi
 			self.fpos[i] = linmap(fng_ang, self.outp_fng, self.inp_fng)
 			#map fingers
-						
-		for i in range(len(self.fpos)):
-			self.fpos[i], self.warr[i] = py_sos_iir(self.fpos[i], self.warr[i], self.lpf_sos[0])
+		
+		if self.filter_fpos == True:		
+			for i in range(len(self.fpos)):
+				self.fpos[i], self.warr[i] = py_sos_iir(self.fpos[i], self.warr[i], self.lpf_sos[0])
 		
 		"""
 			Override touching fingers with prebaked grips
 		"""
-		word = 0
-		for i in range(0,4):
-			word |= (self.dist_to_thumb[i] < 2.7) << i	#get the binary word representing thresholded fingertip-thumb distance
-		if word != 0 and self.is_set_grip == 0 and self.fpos[5] < -30:
-			self.is_set_grip = 1
-			self.grip_word = word
-		elif word == 0:
-			self.is_set_grip = 0
-		if(self.is_set_grip):
-			self.fpos = override_grip(self.fpos, self.grip_word)
+		if self.lock_pinch == True:
+			word = 0
+			for i in range(0,4):
+				word |= (self.dist_to_thumb[i] < 2.7) << i	#get the binary word representing thresholded fingertip-thumb distance
+			if word != 0 and self.is_set_grip == 0 and self.fpos[5] < -30:
+				self.is_set_grip = 1
+				self.grip_word = word
+			elif word == 0:
+				self.is_set_grip = 0
+			if(self.is_set_grip):
+				self.fpos = override_grip(self.fpos, self.grip_word)
 
 
