@@ -1,0 +1,2 @@
+python serialdemo.py
+pause

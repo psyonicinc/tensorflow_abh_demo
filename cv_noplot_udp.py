@@ -21,6 +21,7 @@ if __name__ == "__main__":
 	parser.add_argument('--do_grip_cmds' , help="Include flag for using grip commands for grip recognitions", action='store_true')
 	parser.add_argument('--camera_capture', type=int, help="opencv capture number", default=0)
 	parser.add_argument('--no_pinch_lock', help="disallow the grip/pinch locking", action='store_true')
+	parser.add_argument('--no_filter', help="remove lpf for raw", action='store_true')
 	args = parser.parse_args()
 	
 	use_grip_cmds = args.do_grip_cmds
@@ -29,7 +30,7 @@ if __name__ == "__main__":
 	else:
 		print("Using hardloaded commands")
 	
-	udp_server_addr = ("192.168.0.255", 50134)
+	udp_server_addr = ("192.168.29.255", 50134)
 	client_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 	client_socket.settimeout(1.0)
 
@@ -76,7 +77,8 @@ if __name__ == "__main__":
 		for i in range(0,n):
 			abh = AbilityHandBridge()
 			abh.lock_pinch = False
-			#abh.filter_fpos = False
+			if(args.no_filter == True):
+				abh.filter_fpos = False
 			abhlist.append(abh)
 		
 		send_upsampling_msg_ts = 0
