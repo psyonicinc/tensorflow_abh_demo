@@ -36,7 +36,7 @@ print( "found ", len(slist), "ports.")
 		
 
 for s in slist:
-	buf = create_misc_msg(0xC2) # cmd to enable upsampling of the thumb rotator
+	buf = create_misc_msg(0x50, 0xC2) # cmd to enable upsampling of the thumb rotator
 	print ("writing thumb filter message on com port: ", s)
 	s.write(buf)
 
@@ -50,7 +50,7 @@ try:
 				fpos[i] = (.5*math.sin(ft)+.5)*45+15
 			fpos[5] = -fpos[5]
 			
-			msg = farr_to_barr(fpos)
+			msg = farr_to_barr(0x50, fpos)
 			slist[0].write(msg)
 		except:
 			pass
@@ -61,7 +61,7 @@ try:
 				fpos[i] = (.5*math.sin(ft)+.5)*45+15
 			fpos[5] = -fpos[5]
 			
-			msg = farr_to_barr(fpos)
+			msg = farr_to_barr(0x50, fpos)
 			slist[1].write(msg)
 		except:
 			pass
