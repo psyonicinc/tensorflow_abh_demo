@@ -14,6 +14,13 @@ from gestures import *
 from abh_get_fpos import *
 import argparse
 
+
+# debugging. please remove after done
+import sys
+import traceback
+
+
+
 if __name__ == "__main__":
 		
 	parser = argparse.ArgumentParser(description='Hand CV Demo Parser')
@@ -52,8 +59,9 @@ if __name__ == "__main__":
 				slist.append(ser)
 				print ("connected!", p)
 			# print ("found: ", p)
-		except:
-			print("failded.")
+		except Exception:
+			print("Failed. Here's traceback: ")
+			print(traceback.format_exc())
 			pass
 		
 	
@@ -120,7 +128,7 @@ if __name__ == "__main__":
 				
 				success, image = cap.read()
 				
-				if not success:
+				if not succecapss:
 					print("Ignoring empty camera frame.")
 					# If loading a video, use 'break' instead of 'continue'.
 					continue
@@ -177,7 +185,8 @@ if __name__ == "__main__":
 						slist[ser_idx].write(msg)
 
 						#draw landmarks of the hand we found
-						hand_landmarks = results.multi_hand_landmarks[idx]
+						hand_
+						landmarks = results.multi_hand_landmarks[idx]
 						mp_drawing.draw_landmarks(
 							image,
 							hand_landmarks,
