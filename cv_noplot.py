@@ -14,12 +14,9 @@ from gestures import *
 from abh_get_fpos import *
 import argparse
 
-
 # debugging. please remove after done
 import sys
 import traceback
-
-
 
 if __name__ == "__main__":
 		
@@ -62,7 +59,6 @@ if __name__ == "__main__":
 		except Exception:
 			print("Failed. Here's traceback: ")
 			print(traceback.format_exc())
-			pass
 		
 	
 	print( "found ", len(slist), "ports.")
@@ -78,7 +74,6 @@ if __name__ == "__main__":
 		n = len(slist)
 		
 		lpf_fps_sos = signal.iirfilter(2, Wn=0.7, btype='lowpass', analog=False, ftype='butter', output='sos', fs=30)	#filter for the fps counter
-
 
 		prev_cmd_was_grip = [0,0]
 		
@@ -128,7 +123,7 @@ if __name__ == "__main__":
 				
 				success, image = cap.read()
 				
-				if not succecapss:
+				if not success:
 					print("Ignoring empty camera frame.")
 					# If loading a video, use 'break' instead of 'continue'.
 					continue
@@ -185,8 +180,7 @@ if __name__ == "__main__":
 						slist[ser_idx].write(msg)
 
 						#draw landmarks of the hand we found
-						hand_
-						landmarks = results.multi_hand_landmarks[idx]
+						hand_landmarks = results.multi_hand_landmarks[idx]
 						mp_drawing.draw_landmarks(
 							image,
 							hand_landmarks,
