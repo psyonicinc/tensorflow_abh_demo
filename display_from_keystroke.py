@@ -31,7 +31,8 @@ class Displayer:
         
         self.pressed = ''
         self.listener = Thread(target=self.get_key)
-
+        self.screen_saver = cv2.imread("default_img.jpg", cv2.IMREAD_COLOR) 
+        self.img = self.screen_saver
         
         # Find all serial ports
         slist = []
@@ -70,8 +71,7 @@ class Displayer:
             raise RuntimeError("no serial ports connected")
         else:
             self.n = len(slist)
-        #setup complete. setup mediapipe with 
-
+        
     def get_key(self):
         file_descriptor = sys.stdin.fileno()
         old_settings = termios.tcgetattr(file_descriptor)
@@ -82,16 +82,80 @@ class Displayer:
                 key = sys.stdin.read(1)
                 if (key == 'a' or key =='s' or key == 'q'):
                     self.pressed = key
+                    if key is 'q':
+                        break
 
         finally:
             termios.tcsetattr(file_descriptor, termios.TCSADRAIN, old_settings)
+    
+
 
     def run(self):
         """main loop that runs"""
         lpf_fps_sos = signal.iirfilter(2, Wn=0.7, btype='lowpass', analog=False, ftype='butter', output='sos', fs=30)	#filter for the fps counter
         prev_cmd_was_grip = [0,0]
 
-        pass
+        mp_drawing = mp.solutions.drawing_utils
+        mp_drawing_styles = mp.solutions.drawing_styles
+        mp_hands = mp.solutions.hands
+
+        # webcam input
+        cap = cv2.VideoCapture(self.camera_capture)
+        cap.set(cv2.CAP_PROP_FPS, 90)
+        fps = int(cap.get(5))
+        print("fps: ", fps)
+
+        self.listener.start() # thread listens to keystrokes 
+        
+        with mp_hands.Hands(
+				max_num_hands=n,
+				model_complexity=0,
+				min_detection_confidence=0.66,
+				min_tracking_confidence=0.66) as hands:
+            
+            tprev = cv2.getTickCount()
+            warr_fps = [0,0,0]
+            
+            # params for grip overload
+            abhlist = []
+            for i in range(self.n):
+                abh = AbilityHandBridge()
+                abhlist.append(abh)
+
+            send_unsampling_msg_ts = 0
+            while cap.isOpened():
+                ts = cv2.getTickCount()
+                tdif = ts - tprev
+                tprev = ts
+                fps = cv2.getTickFrequency()/tdif
+                success, image = cap.read()
+
+                if not success:
+                    print("ignoring empty frame")
+                    continue
+                
+                image.flags.writeable = False
+                image = cv2.cvtColor(image, cv2.colorBGR2RGB)
+                results = hands.process(image)
+                if results.multi_hand_landmarks:
+                    num_writes = 1
+					if(len(results.multi_hand_landmarks) == 2 and results.multi_handedness[0].classification[0].index != results.multi_handedness[1].classification[0].index):
+						num_writes = 2
+                    #TODO: CONTINUE FROM HERE
+
+            show_webcam = False # webcam flag
+            while (cap.isOpened()):
+                if (self.pressed == 'a'):
+                    show_webcam = not show_webcam
+
+                if (show_webcam):
+                    pass
+                else:
+                    self.img
+
+                cv2.waitKey(0)
+
+    cv2.destroyAllWindows()
 
 if __name__=="__main__":
     parser = argparse.ArgumentParser(description='Hand CV Demo Parser')
