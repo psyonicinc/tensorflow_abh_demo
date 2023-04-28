@@ -224,7 +224,8 @@ if __name__ == "__main__":
 				dst = cv2.copyMakeBorder(imgresized,top,bottom,left,right, cv2.BORDER_CONSTANT, None, value = 0)
 				cv2.imshow('MediaPipe Hands', cv2.flip(dst, 1))
 
-				if cv2.waitKey(1) & 0xFF == 27:
+				key = cv2.waitKey(1) & 0xFF 
+				if key == ord('q'):
 					break
 				
 				t_seconds = ts/cv2.getTickFrequency()
