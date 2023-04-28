@@ -82,7 +82,7 @@ class Displayer:
                 key = sys.stdin.read(1)
                 if (key == 'a' or key =='s' or key == 'q'):
                     self.pressed = key
-                    if key is 'q':
+                    if key == 'q':
                         break
 
         finally:
@@ -135,7 +135,7 @@ class Displayer:
                     continue
                 
                 image.flags.writeable = False
-                image = cv2.cvtColor(image, cv2.colorBGR2RGB)
+                image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
                 results = hands.process(image)
                 if results.multi_hand_landmarks:
                     num_writes = 1
@@ -186,7 +186,7 @@ class Displayer:
 						# Point should be just in front of the palm. Compensated for handedness
                         static_point_b = np.array([4.16, 1.05, -1.47*abhlist[idx].handed_sign, 1])*abhlist[idx].scale
                         static_point_b[3] = 1 # remove scaling that wasapplied to the immutable '1'
-                        neutral_thumb_w = abhlist[idx].hw_b_dot(static_point_b) # get dot position in world coordinates for a visual tag/reference
+                        neutral_thumb_w = abhlist[idx].hw_b.dot(static_point_b) # get dot position in world coordinates for a visual tag/reference
                         l_list = landmark_pb2.NormalizedLandmarkList(
                             landmark=[
                                 v4_to_landmark(neutral_thumb_w)
