@@ -204,9 +204,24 @@ if __name__ == "__main__":
 				
 					
 				# Flip the image horizontally for a selfie-view display.
-				cv2.namedWindow('MediaPipe Hands', cv2.WINDOW_FREERATIO)
-				cv2.setWindowProperty('MediaPipe Hands',  cv2.WND_PROP_ASPECT_RATIO, cv2.WINDOW_FREERATIO)
-				cv2.imshow('MediaPipe Hands', cv2.flip(image, 1))
+				cv2.namedWindow('MediaPipe Hands', cv2.WINDOW_NORMAL)
+				cv2.setWindowProperty('MediaPipe Hands',  cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
+
+				(x, y, windowWidth, windowHeight) = cv2.getWindowImageRect('MediaPipe Hands')
+				
+				ydiv = np.floor(windowHeight/image.shape[0])
+				xdiv = np.floor(windowWidth/image.shape[1])
+				uniform_mult = np.min([xdiv,ydiv])
+				
+				yrem = (windowHeight - image.shape[0]*uniform_mult)
+				xrem = (windowWidth - image.shape[1]*uniform_mult)
+				top = int(yrem/2)
+				bottom = top
+				left = int(xrem/2)
+				right = left
+				imgresized = cv2.resize(image, (int(image.shape[1]*uniform_mult),int(image.shape[0]*uniform_mult)), interpolation=cv2.INTER_AREA)
+				dst = cv2.copyMakeBorder(imgresized,top,bottom,left,right, cv2.BORDER_CONSTANT, None, value = 0)
+				cv2.imshow('MediaPipe Hands', cv2.flip(dst, 1))
 
 				if cv2.waitKey(1) & 0xFF == 27:
 					break
