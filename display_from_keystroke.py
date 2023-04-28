@@ -71,6 +71,9 @@ class Displayer:
             raise RuntimeError("no serial ports connected")
         else:
             self.n = len(self.slist)
+    
+    def wait_key_listener(self):
+        cv2.waitKey()
         
     def get_key(self):
         file_descriptor = sys.stdin.fileno()
@@ -231,30 +234,28 @@ class Displayer:
                     img = self.screen_saver
 
                 # Flip the image horizontally for selfie-view display
-                cv2.namedWindow('MediaPipe Hands', cv2.WINDOW_FREERATIO)
-                cv2.setWindowProperty('MediaPipe Hands',  cv2.WND_PROP_ASPECT_RATIO, cv2.WINDOW_FREERATIO)
-                cv2.imshow('MediaPipe Hands', img)   
+                cv2.namedWindow('MediaPipe Hands', cv2.WINDOW_NORMAL)
+                cv2.setWindowProperty('MediaPipe Hands',  cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
 
-                if cv2.waitKey(1) & 0xFF == 27:
-                    break                     
+                (x, y, windowWidth, windowHeight) = cv2.getWindowImageRect('MediaPipe Hands')
+
+                ydiv = np.floor(windowHeight/img.shape[0])
+                xdiv = np.floor(windowWidth/img.shape[1])
+                uniform_mult = np.min([xdiv,ydiv])
+
+                yrem = (windowHeight - img.shape[0]*uniform_mult)
+                xrem = (windowWidth - img.shape[1]*uniform_mult)
+                top = int(yrem/2)
+                bottom = top
+                left = int(xrem/2)
+                right = left
+                imgresized = cv2.resize(img, (int(img.shape[1]*uniform_mult),int(img.shape[0]*uniform_mult)), interpolation=cv2.INTER_AREA)
+                dst = cv2.copyMakeBorder(imgresized,top,bottom,left,right, cv2.BORDER_CONSTANT, None, value = 0)
+                cv2.imshow('MediaPipe Hands', dst)
                 
         cap.release()
         for s in self.slist:
             s.close()
-
-        # """OTHER IDEA. PLEASE EXCUSE THIS BLOCK"""
-        # show_webcam = False # webcam flag
-        # while (cap.isOpened()):
-        #     if (self.pressed == 'a'):
-        #         show_webcam = not show_webcam
-        #         self.pressed = ''
-                
-        #     if (show_webcam):
-        #         pass
-        #     else:
-        #         self.img
-
-        #     cv2.waitKey(0)
 
     cv2.destroyAllWindows()
 
