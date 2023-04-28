@@ -108,7 +108,7 @@ class Displayer:
         self.listener.start() # thread listens to keystrokes 
         
         with mp_hands.Hands(
-				max_num_hands=n,
+				max_num_hands=self.n,
 				model_complexity=0,
 				min_detection_confidence=0.66,
 				min_tracking_confidence=0.66) as hands:
@@ -159,22 +159,82 @@ class Displayer:
                             if (prev_cmd_was_grip[ser_idx] == 0):
                                 msg = send_grip_cmd(0x50, grip, 0xFF)
                                 self.slist[ser_idx].write(msg)
+                                time.sleep(0.01)
+                                msg = send_grip_cmd(0x50, 0x00, 0xFF)
+                                self.slist[ser_idx].write(msg)
+                                time.sleep(0.01)
+                                prev_cmd_was_grip[ser_idx] = 1
+                            msg = send_grip_cmd(0x50, grip, 0xFF)
+                        else:
+                            prev_cmd_was_grip[idx] = 0
+							# Write the finger array out over UART to the hand!
+                            msg = farr_to_barr(0x50, abhlist[idx].fpos)
+                        
+                        self.slist[ser_idx].write(msg)
+
+                        # draw landmarks of the hand we found
+                        hand_landmarks = results.multi_hand_landmarks[idx]
+                        mp_drawing.draw_landmarks(
+                            image,
+                            hand_landmarks,
+                            mp_hands.HAND_CONNECTIONS,
+                            mp_drawing_styles.get_default_hand_landmarks_style(),
+                            mp_drawing_styles.get_default_hand_connections_style()
+                        )
+
+						# Render a static point in the base frame of the model. Visualization of the position-orientation accuracy.
+						# Point should be just in front of the palm. Compensated for handedness
+                        static_point_b = np.array([4.16, 1.05, -1.47*abhlist[idx].handed_sign, 1])*abhlist[idx].scale
+                        static_point_b[3] = 1 # remove scaling that wasapplied to the immutable '1'
+                        neutral_thumb_w = abhlist[idx].hw_b_dot(static_point_b) # get dot position in world coordinates for a visual tag/reference
+                        l_list = landmark_pb2.NormalizedLandmarkList(
+                            landmark=[
+                                v4_to_landmark(neutral_thumb_w)
+                            ]
+                        )
+                        mp_drawing.draw_landmarks(
+                            image,
+                            l_list,
+                            [],
+                            mp_drawing_styles.get_default_hand_landmarks_style(),
+                            mp_drawing_styles.get_default_hand_connections_style()
+                        )
+                # Flip the image horizontally for selfie-view display
+                cv2.namedWindow('MediaPipe Hands', cv2.WINDOW_FREERATIO)
+                cv2.setWindowProperty('MediaPipe Hands',  cv2.WND_PROP_ASPECT_RATIO, cv2.WINDOW_FREERATIO)
+                cv2.imshow('MediaPipe Hands', cv2.flip(image, 1))   
+
+                if cv2.waitKey(1) & 0xFF == 27:
+                    break                     
                 
+                t_seconds = ts/cv2.getTickFrequency()
+                if (t_seconds > send_unsampling_msg_ts):
+                    send_unsampling_msg_ts = t_seconds + 10
+                    for i in range(self.n):
+                        msg = create_misc_msg(0x50, 0xC2)
+                        print("sending: ", [ hex(b) for b in msg ], "to ser device ", i)
+                        self.slist[i].write(msg)
                 #TODO: CONTINUE FROM HERE
 
-            """OTHER IDEA. PLEASE EXCUSE THIS BLOCK"""
-            show_webcam = False # webcam flag
-            while (cap.isOpened()):
-                if (self.pressed == 'a'):
-                    show_webcam = not show_webcam
-                    self.pressed = ''
-                    
-                if (show_webcam):
-                    pass
-                else:
-                    self.img
+                fpsfilt, warr_fps = py_sos_iir(fps, warr_fps, lpf_fps_sos[0])
+                print(fpsfilt)
+        cap.release()
+        for s in self.slist:
+            s.close()
 
-                cv2.waitKey(0)
+        # """OTHER IDEA. PLEASE EXCUSE THIS BLOCK"""
+        # show_webcam = False # webcam flag
+        # while (cap.isOpened()):
+        #     if (self.pressed == 'a'):
+        #         show_webcam = not show_webcam
+        #         self.pressed = ''
+                
+        #     if (show_webcam):
+        #         pass
+        #     else:
+        #         self.img
+
+        #     cv2.waitKey(0)
 
     cv2.destroyAllWindows()
 
