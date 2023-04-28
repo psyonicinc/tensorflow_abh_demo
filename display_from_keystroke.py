@@ -32,8 +32,8 @@ class Displayer:
         self.pressed = ''
         self.listener = Thread(target=self.get_key)
         self.screen_saver = cv2.imread("default_img.jpg", cv2.IMREAD_COLOR) 
-        self.img = self.screen_saver
         
+        print("here's screen saver: ", self.screen_saver.shape)
         # Find all serial ports
         self.slist = []
         com_ports_list = list(list_ports.comports())
@@ -106,6 +106,7 @@ class Displayer:
         print("fps: ", fps)
 
         self.listener.start() # thread listens to keystrokes 
+        img = self.screen_saver
         
         with mp_hands.Hands(
 				max_num_hands=self.n,
@@ -123,101 +124,120 @@ class Displayer:
                 abhlist.append(abh)
 
             send_unsampling_msg_ts = 0
-            while cap.isOpened():
-                ts = cv2.getTickCount()
-                tdif = ts - tprev
-                tprev = ts
-                fps = cv2.getTickFrequency()/tdif
-                success, image = cap.read()
 
-                if not success:
-                    print("ignoring empty frame")
-                    continue
-                
-                image.flags.writeable = False
-                image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-                results = hands.process(image)
-                if results.multi_hand_landmarks:
-                    num_writes = 1
-                    if(len(results.multi_hand_landmarks) == 2 and results.multi_handedness[0].classification[0].index != results.multi_handedness[1].classification[0].index):
-                        num_writes = 2
-                    for idx in range(num_writes):
-                        # log time for plotting
-                        t = time.time()
-                        ser_idx = results.multi_handedness[idx].classification[0].index
-                        if (self.n == 1):
-                            ser_idx = 0
+            show_webcam = False
 
-                        abhlist[idx].update(mp_hands, results.multi_hand_landmarks[idx].landmark, results.multi_handedness[idx].classification[0].index)
+            while True:
+                if self.pressed == 'q':
+                    self.pressed = ''
+                    break
 
-                        if abhlist[idx].is_set_grip == 1 and (abhlist[idx].grip_word == 1 or abhlist[idx].grip_word == 3) and self.use_grip_cmds == 1:
-                            grip = 0x00
-                            if (abhlist[idx].grip_word == 1):
-                                grip = 0x3
-                            elif (abhlist[idx].grip_word ==3):
-                                grip = 0x4
-                            if (prev_cmd_was_grip[ser_idx] == 0):
+                if self.pressed == 'a':
+                    show_webcam = not show_webcam
+                    self.pressed = ''
+
+                if show_webcam:
+                    if not cap.isOpened():
+                        raise RuntimeError("could not open webcam. cap.isOpened() return 'False' in run()")
+                    ts = cv2.getTickCount()
+                    tdif = ts - tprev
+                    tprev = ts
+                    fps = cv2.getTickFrequency()/tdif
+                    success, image = cap.read()
+
+                    if not success:
+                        print("ignoring empty frame")
+                        continue
+                    
+                    image.flags.writeable = False
+                    # image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+                    results = hands.process(image)
+                    if results.multi_hand_landmarks:
+                        num_writes = 1
+                        if(len(results.multi_hand_landmarks) == 2 and results.multi_handedness[0].classification[0].index != results.multi_handedness[1].classification[0].index):
+                            num_writes = 2
+                        for idx in range(num_writes):
+                            # log time for plotting
+                            t = time.time()
+                            ser_idx = results.multi_handedness[idx].classification[0].index
+                            if (self.n == 1):
+                                ser_idx = 0
+
+                            abhlist[idx].update(mp_hands, results.multi_hand_landmarks[idx].landmark, results.multi_handedness[idx].classification[0].index)
+
+                            if abhlist[idx].is_set_grip == 1 and (abhlist[idx].grip_word == 1 or abhlist[idx].grip_word == 3) and self.use_grip_cmds == 1:
+                                grip = 0x00
+                                if (abhlist[idx].grip_word == 1):
+                                    grip = 0x3
+                                elif (abhlist[idx].grip_word ==3):
+                                    grip = 0x4
+                                if (prev_cmd_was_grip[ser_idx] == 0):
+                                    msg = send_grip_cmd(0x50, grip, 0xFF)
+                                    self.slist[ser_idx].write(msg)
+                                    time.sleep(0.01)
+                                    msg = send_grip_cmd(0x50, 0x00, 0xFF)
+                                    self.slist[ser_idx].write(msg)
+                                    time.sleep(0.01)
+                                    prev_cmd_was_grip[ser_idx] = 1
                                 msg = send_grip_cmd(0x50, grip, 0xFF)
-                                self.slist[ser_idx].write(msg)
-                                time.sleep(0.01)
-                                msg = send_grip_cmd(0x50, 0x00, 0xFF)
-                                self.slist[ser_idx].write(msg)
-                                time.sleep(0.01)
-                                prev_cmd_was_grip[ser_idx] = 1
-                            msg = send_grip_cmd(0x50, grip, 0xFF)
-                        else:
-                            prev_cmd_was_grip[idx] = 0
-							# Write the finger array out over UART to the hand!
-                            msg = farr_to_barr(0x50, abhlist[idx].fpos)
-                        
-                        self.slist[ser_idx].write(msg)
+                            else:
+                                prev_cmd_was_grip[idx] = 0
+                                # Write the finger array out over UART to the hand!
+                                msg = farr_to_barr(0x50, abhlist[idx].fpos)
+                            
+                            self.slist[ser_idx].write(msg)
 
-                        # draw landmarks of the hand we found
-                        hand_landmarks = results.multi_hand_landmarks[idx]
-                        mp_drawing.draw_landmarks(
-                            image,
-                            hand_landmarks,
-                            mp_hands.HAND_CONNECTIONS,
-                            mp_drawing_styles.get_default_hand_landmarks_style(),
-                            mp_drawing_styles.get_default_hand_connections_style()
-                        )
+                            # draw landmarks of the hand we found
+                            hand_landmarks = results.multi_hand_landmarks[idx]
+                            mp_drawing.draw_landmarks(
+                                image,
+                                hand_landmarks,
+                                mp_hands.HAND_CONNECTIONS,
+                                mp_drawing_styles.get_default_hand_landmarks_style(),
+                                mp_drawing_styles.get_default_hand_connections_style()
+                            )
 
-						# Render a static point in the base frame of the model. Visualization of the position-orientation accuracy.
-						# Point should be just in front of the palm. Compensated for handedness
-                        static_point_b = np.array([4.16, 1.05, -1.47*abhlist[idx].handed_sign, 1])*abhlist[idx].scale
-                        static_point_b[3] = 1 # remove scaling that wasapplied to the immutable '1'
-                        neutral_thumb_w = abhlist[idx].hw_b.dot(static_point_b) # get dot position in world coordinates for a visual tag/reference
-                        l_list = landmark_pb2.NormalizedLandmarkList(
-                            landmark=[
-                                v4_to_landmark(neutral_thumb_w)
-                            ]
-                        )
-                        mp_drawing.draw_landmarks(
-                            image,
-                            l_list,
-                            [],
-                            mp_drawing_styles.get_default_hand_landmarks_style(),
-                            mp_drawing_styles.get_default_hand_connections_style()
-                        )
+                            # Render a static point in the base frame of the model. Visualization of the position-orientation accuracy.
+                            # Point should be just in front of the palm. Compensated for handedness
+                            static_point_b = np.array([4.16, 1.05, -1.47*abhlist[idx].handed_sign, 1])*abhlist[idx].scale
+                            static_point_b[3] = 1 # remove scaling that wasapplied to the immutable '1'
+                            neutral_thumb_w = abhlist[idx].hw_b.dot(static_point_b) # get dot position in world coordinates for a visual tag/reference
+                            l_list = landmark_pb2.NormalizedLandmarkList(
+                                landmark=[
+                                    v4_to_landmark(neutral_thumb_w)
+                                ]
+                            )
+                            mp_drawing.draw_landmarks(
+                                image,
+                                l_list,
+                                [],
+                                mp_drawing_styles.get_default_hand_landmarks_style(),
+                                mp_drawing_styles.get_default_hand_connections_style()
+                            )
+
+                    t_seconds = ts/cv2.getTickFrequency()
+                    if (t_seconds > send_unsampling_msg_ts):
+                        send_unsampling_msg_ts = t_seconds + 10
+                        for i in range(self.n):
+                            msg = create_misc_msg(0x50, 0xC2)
+                            print("sending: ", [ hex(b) for b in msg ], "to ser device ", i)
+                            self.slist[i].write(msg)
+
+                    fpsfilt, warr_fps = py_sos_iir(fps, warr_fps, lpf_fps_sos[0])
+                    print(fpsfilt)
+                    img = cv2.flip(image, 1)
+                
+                else:
+                    img = self.screen_saver
+
                 # Flip the image horizontally for selfie-view display
                 cv2.namedWindow('MediaPipe Hands', cv2.WINDOW_FREERATIO)
                 cv2.setWindowProperty('MediaPipe Hands',  cv2.WND_PROP_ASPECT_RATIO, cv2.WINDOW_FREERATIO)
-                cv2.imshow('MediaPipe Hands', cv2.flip(image, 1))   
+                cv2.imshow('MediaPipe Hands', img)   
 
                 if cv2.waitKey(1) & 0xFF == 27:
                     break                     
                 
-                t_seconds = ts/cv2.getTickFrequency()
-                if (t_seconds > send_unsampling_msg_ts):
-                    send_unsampling_msg_ts = t_seconds + 10
-                    for i in range(self.n):
-                        msg = create_misc_msg(0x50, 0xC2)
-                        print("sending: ", [ hex(b) for b in msg ], "to ser device ", i)
-                        self.slist[i].write(msg)
-                #TODO: CONTINUE FROM HERE
-
-                fpsfilt, warr_fps = py_sos_iir(fps, warr_fps, lpf_fps_sos[0])
-                print(fpsfilt)
         cap.release()
         for s in self.slist:
             s.close()
