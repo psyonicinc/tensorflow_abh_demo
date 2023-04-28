@@ -211,7 +211,8 @@ if __name__ == "__main__":
 				
 				ydiv = np.floor(windowHeight/image.shape[0])
 				xdiv = np.floor(windowWidth/image.shape[1])
-				uniform_mult = np.min([xdiv,ydiv])
+				uniform_mult = np.max([1,np.min([xdiv,ydiv])])
+
 				
 				yrem = (windowHeight - image.shape[0]*uniform_mult)
 				xrem = (windowWidth - image.shape[1]*uniform_mult)
