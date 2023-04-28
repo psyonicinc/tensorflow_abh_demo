@@ -153,7 +153,7 @@ class Displayer:
                         continue
                     
                     image.flags.writeable = False
-                    # image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+                    image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
                     results = hands.process(image)
                     if results.multi_hand_landmarks:
                         num_writes = 1
@@ -241,13 +241,13 @@ class Displayer:
 
                 ydiv = np.floor(windowHeight/img.shape[0])
                 xdiv = np.floor(windowWidth/img.shape[1])
-                uniform_mult = np.min([xdiv,ydiv])
+                uniform_mult = np.max([1,np.min([xdiv,ydiv])])
 
                 yrem = (windowHeight - img.shape[0]*uniform_mult)
                 xrem = (windowWidth - img.shape[1]*uniform_mult)
-                top = int(yrem/2)
+                top = int(np.max([0,yrem/2]))
                 bottom = top
-                left = int(xrem/2)
+                left = int(np.max([0,xrem/2]))
                 right = left
                 imgresized = cv2.resize(img, (int(img.shape[1]*uniform_mult),int(img.shape[0]*uniform_mult)), interpolation=cv2.INTER_AREA)
                 dst = cv2.copyMakeBorder(imgresized,top,bottom,left,right, cv2.BORDER_CONSTANT, None, value = 0)
