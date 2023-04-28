@@ -35,7 +35,7 @@ class Displayer:
         self.img = self.screen_saver
         
         # Find all serial ports
-        slist = []
+        self.slist = []
         com_ports_list = list(list_ports.comports())
         port = []
 
@@ -54,23 +54,23 @@ class Displayer:
                 ser = []
                 if( (args.CP210x_only == False) or  (args.CP210x_only == True and p[1].find('CP210x') != -1) ):
                     ser = (serial.Serial(p[0],'460800', timeout = 1))
-                    slist.append(ser)
+                    self.slist.append(ser)
                     print ("connected!", p)
 
             except Exception:
                 print("Failed to connect. here's traceback: ")
                 print(traceback.format_exc())
 
-        print("found ", len(slist), "ports")
-        for s in slist:
+        print("found ", len(self.slist), "ports")
+        for s in self.slist:
             buf = create_misc_msg(0x50, 0xC2)
             print("writing thumb filter message on com port: ", s)
             s.write(buf)
         
-        if not (len(slist) > 0 and len(slist) <= 2): # check if any serial ports are connected
+        if not (len(self.slist) > 0 and len(self.slist) <= 2): # check if any serial ports are connected
             raise RuntimeError("no serial ports connected")
         else:
-            self.n = len(slist)
+            self.n = len(self.slist)
         
     def get_key(self):
         file_descriptor = sys.stdin.fileno()
@@ -139,15 +139,36 @@ class Displayer:
                 results = hands.process(image)
                 if results.multi_hand_landmarks:
                     num_writes = 1
-					if(len(results.multi_hand_landmarks) == 2 and results.multi_handedness[0].classification[0].index != results.multi_handedness[1].classification[0].index):
-						num_writes = 2
-                    #TODO: CONTINUE FROM HERE
+                    if(len(results.multi_hand_landmarks) == 2 and results.multi_handedness[0].classification[0].index != results.multi_handedness[1].classification[0].index):
+                        num_writes = 2
+                    for idx in range(num_writes):
+                        # log time for plotting
+                        t = time.time()
+                        ser_idx = results.multi_handedness[idx].classification[0].index
+                        if (self.n == 1):
+                            ser_idx = 0
 
+                        abhlist[idx].update(mp_hands, results.multi_hand_landmarks[idx].landmark, results.multi_handedness[idx].classification[0].index)
+
+                        if abhlist[idx].is_set_grip == 1 and (abhlist[idx].grip_word == 1 or abhlist[idx].grip_word == 3) and self.use_grip_cmds == 1:
+                            grip = 0x00
+                            if (abhlist[idx].grip_word == 1):
+                                grip = 0x3
+                            elif (abhlist[idx].grip_word ==3):
+                                grip = 0x4
+                            if (prev_cmd_was_grip[ser_idx] == 0):
+                                msg = send_grip_cmd(0x50, grip, 0xFF)
+                                self.slist[ser_idx].write(msg)
+                
+                #TODO: CONTINUE FROM HERE
+
+            """OTHER IDEA. PLEASE EXCUSE THIS BLOCK"""
             show_webcam = False # webcam flag
             while (cap.isOpened()):
                 if (self.pressed == 'a'):
                     show_webcam = not show_webcam
-
+                    self.pressed = ''
+                    
                 if (show_webcam):
                     pass
                 else:
