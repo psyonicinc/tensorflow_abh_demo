@@ -216,9 +216,9 @@ if __name__ == "__main__":
 				
 				yrem = (windowHeight - image.shape[0]*uniform_mult)
 				xrem = (windowWidth - image.shape[1]*uniform_mult)
-				top = int(yrem/2)
+				top = int(np.max([0, yrem/2]))
 				bottom = top
-				left = int(xrem/2)
+				left = int(np.max([0,xrem/2]))
 				right = left
 				imgresized = cv2.resize(image, (int(image.shape[1]*uniform_mult),int(image.shape[0]*uniform_mult)), interpolation=cv2.INTER_AREA)
 				dst = cv2.copyMakeBorder(imgresized,top,bottom,left,right, cv2.BORDER_CONSTANT, None, value = 0)
