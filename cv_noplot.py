@@ -108,6 +108,8 @@ if __name__ == "__main__":
 					
 			warr_fps = [0,0,0]
 			
+			screen_saver = cv2.imread("default_img.jpg", cv2.IMREAD_COLOR) 
+
 			#paramters for grip overload
 			abhlist = []
 			for i in range(0,n):
@@ -206,7 +208,8 @@ if __name__ == "__main__":
 							mp_drawing_styles.get_default_hand_landmarks_style(),
 							mp_drawing_styles.get_default_hand_connections_style())
 				
-					
+
+				image = screen_saver
 				# Flip the image horizontally for a selfie-view display.
 				cv2.namedWindow('MediaPipe Hands', cv2.WINDOW_NORMAL)
 				cv2.setWindowProperty('MediaPipe Hands',  cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
@@ -231,7 +234,11 @@ if __name__ == "__main__":
 				key = cv2.waitKey(1) & 0xFF 
 				if key == ord('q'):
 					break
-				
+				if key == ord('a'):
+					#TODO: THE SWITCH.
+					flag = not flag
+					print("I JUST FLIPPED THE SWITCH")
+
 				t_seconds = ts/cv2.getTickFrequency()
 				if(t_seconds > send_upsampling_msg_ts):
 					send_upsampling_msg_ts = t_seconds + 10
