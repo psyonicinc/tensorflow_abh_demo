@@ -108,8 +108,7 @@ class Displayer:
         fps = int(cap.get(5))
         print("fps: ", fps)
 
-        self.listener.start() # thread listens to keystrokes 
-        img = self.screen_saver
+        #self.listener.start() # thread listens to keystrokes 
         
         with mp_hands.Hands(
 				max_num_hands=self.n,
@@ -131,14 +130,6 @@ class Displayer:
             show_webcam = False
 
             while True:
-                if self.pressed == 'q':
-                    self.pressed = ''
-                    break
-
-                if self.pressed == 'a':
-                    show_webcam = not show_webcam
-                    self.pressed = ''
-
                 if show_webcam:
                     if not cap.isOpened():
                         raise RuntimeError("could not open webcam. cap.isOpened() return 'False' in run()")
@@ -153,7 +144,7 @@ class Displayer:
                         continue
                     
                     image.flags.writeable = False
-                    image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+                    #image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR) # uncomment if clor issues
                     results = hands.process(image)
                     if results.multi_hand_landmarks:
                         num_writes = 1
@@ -228,30 +219,36 @@ class Displayer:
 
                     fpsfilt, warr_fps = py_sos_iir(fps, warr_fps, lpf_fps_sos[0])
                     print(fpsfilt)
-                    img = cv2.flip(image, 1)
+                    image = cv2.flip(image, 1)
                 
                 else:
-                    img = self.screen_saver
+                    image = self.screen_saver
 
                 # Flip the image horizontally for selfie-view display
                 cv2.namedWindow('MediaPipe Hands', cv2.WINDOW_NORMAL)
                 cv2.setWindowProperty('MediaPipe Hands',  cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
-
+                
                 (x, y, windowWidth, windowHeight) = cv2.getWindowImageRect('MediaPipe Hands')
-
-                ydiv = np.floor(windowHeight/img.shape[0])
-                xdiv = np.floor(windowWidth/img.shape[1])
+                ydiv = np.floor(windowHeight/image.shape[0])
+                xdiv = np.floor(windowWidth/image.shape[1])
                 uniform_mult = np.max([1,np.min([xdiv,ydiv])])
-
-                yrem = (windowHeight - img.shape[0]*uniform_mult)
-                xrem = (windowWidth - img.shape[1]*uniform_mult)
-                top = int(np.max([0,yrem/2]))
+                
+                yrem = (windowHeight - image.shape[0]*uniform_mult)
+                xrem = (windowWidth - image.shape[1]*uniform_mult)
+                top = int(np.max([0, yrem/2]))
                 bottom = top
                 left = int(np.max([0,xrem/2]))
                 right = left
-                imgresized = cv2.resize(img, (int(img.shape[1]*uniform_mult),int(img.shape[0]*uniform_mult)), interpolation=cv2.INTER_AREA)
+                
+                imgresized = cv2.resize(image, (int(image.shape[1]*uniform_mult),int(image.shape[0]*uniform_mult)), interpolation=cv2.INTER_AREA)
                 dst = cv2.copyMakeBorder(imgresized,top,bottom,left,right, cv2.BORDER_CONSTANT, None, value = 0)
                 cv2.imshow('MediaPipe Hands', dst)
+                
+                key = cv2.waitKey(1) & 0xFF 
+                if key == ord('q'):
+                    break
+                if key == ord('a'):
+                    show_webcam = not show_webcam
                 
         cap.release()
         for s in self.slist:
