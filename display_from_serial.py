@@ -275,6 +275,7 @@ class SerialDisplayer:
         cap.release()
         for s in self.slist:
             s.close()
+        self.input_listener.close()
 
     cv2.destroyAllWindows()
 
