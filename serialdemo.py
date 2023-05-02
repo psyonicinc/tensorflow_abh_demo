@@ -5,7 +5,7 @@ import math
 import time
 import numpy as np
 
-#ser = serial.Serial('COM4','460800', timeout = 1)
+# ser = serial.Serial('COM4','460800', timeout = 1)
 """ 
 	Find a serial com port.
 """
@@ -27,7 +27,6 @@ for p in port:
 		ser = (serial.Serial(p[0],'460800', timeout = 1))
 		slist.append(ser)
 		print ("connected!", p)
-		# print ("found: ", p)
 	except:
 		print("failded.")
 		pass

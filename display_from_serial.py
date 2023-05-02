@@ -2,6 +2,7 @@ import cv2
 import mediapipe as mp
 import time
 import numpy as np
+import math
 from matplotlib import animation
 from matplotlib import pyplot as plt
 from vect_tools import *
@@ -119,6 +120,8 @@ class SerialDisplayer:
 
             show_webcam = False
 
+            fpos = [15., 15., 15., 15., 15., -15.]	# for the slow hand wave
+
             while True:
                 data_char = self.input_listener.read(self.input_listener.inWaiting()).decode('ascii') # get our input
                 if data_char == 'A':
@@ -140,7 +143,7 @@ class SerialDisplayer:
                         continue
                     
                     image.flags.writeable = False
-                    #image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR) # uncomment if clor issues
+                    # image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR) # uncomment if clor issues
                     results = hands.process(image)
                     if results.multi_hand_landmarks:
                         num_writes = 1
@@ -218,7 +221,30 @@ class SerialDisplayer:
                     image = cv2.flip(image, 1)
                 
                 else:
+                    try:
+                        for i in range(len(fpos)):
+                            ft = time.time()*3 + i*(2*np.pi)/12
+                            fpos[i] = (0.5*math.sin(ft)+0.5)*45 + 15
+                        fpos[5] = -fpos[5]
+
+                        msg = farr_to_barr(0x50, fpos)
+                        self.slist[0].write(msg)
+                    except:
+                        pass 
+                    
+                    try:
+                        for i in range(len(fpos)):
+                            ft = time.time()*3 + (i + 6)*(2*np.pi)/12
+                            fpos[i] = (0.5*math.sin(ft)+0.5)*45+15
+                        fpos[5] = -fpos[5]
+                        msg = farr_to_barr(0x50, fpos)
+                        self.slist[1].write(msg)
+                    except:
+                        pass
+
                     image = self.screen_saver
+
+                    # time.sleep(0.001) # not sure if we need this so much so I commented it out
 
                 # Flip the image horizontally for selfie-view display
                 cv2.namedWindow('MediaPipe Hands', cv2.WINDOW_NORMAL)
