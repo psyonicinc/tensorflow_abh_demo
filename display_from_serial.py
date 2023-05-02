@@ -74,7 +74,8 @@ class SerialDisplayer:
                     break
 
         if not self.input_listener:
-            raise RuntimeError("No switch found. Cannot launch program")
+            print("warning: no input handler found")
+            # raise RuntimeError("No switch found. Cannot launch program")
 
         for s in self.slist:
             buf = create_misc_msg(0x50, 0xC2)
@@ -123,11 +124,12 @@ class SerialDisplayer:
             fpos = [15., 15., 15., 15., 15., -15.]	# for the slow hand wave
 
             while True:
-                data_char = self.input_listener.read(self.input_listener.inWaiting()).decode('ascii') # get our input
-                if data_char == 'A':
-                    show_webcam = True
-                elif data_char == 'X':
-                    show_webcam = False
+                if self.input_listener:
+                    data_char = self.input_listener.read(self.input_listener.inWaiting()).decode('ascii') # get our input
+                    if data_char == 'A':
+                        show_webcam = True
+                    elif data_char == 'X':
+                        show_webcam = False
 
                 if show_webcam:
                     if not cap.isOpened():
@@ -143,8 +145,9 @@ class SerialDisplayer:
                         continue
                     
                     image.flags.writeable = False
-                    # image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR) # uncomment if clor issues
+                    image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR) 
                     results = hands.process(image)
+                    image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB) # uncomment if color output looks funny
                     if results.multi_hand_landmarks:
                         num_writes = 1
                         if(len(results.multi_hand_landmarks) == 2 and results.multi_handedness[0].classification[0].index != results.multi_handedness[1].classification[0].index):
@@ -275,7 +278,9 @@ class SerialDisplayer:
         cap.release()
         for s in self.slist:
             s.close()
-        self.input_listener.close()
+        
+        if self.input_listener:
+            self.input_listener.close()
 
     cv2.destroyAllWindows()
 
