@@ -65,7 +65,7 @@ class SerialDisplayer:
 
         start_time = time.time()
         print("connecting input handler...")
-        while(time.time() - start_time < 10):
+        while(time.time() - start_time < 5):
             for i in range(len(self.slist)):
                 if (self.slist[i].inWaiting() > 0):
                     self.input_listener = self.slist[i]
