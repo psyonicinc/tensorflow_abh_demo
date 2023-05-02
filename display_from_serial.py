@@ -69,7 +69,7 @@ class SerialDisplayer:
                 if (self.slist[i].inWaiting() > 0):
                     self.input_listener = self.slist[i]
                     self.slist.pop(i)
-                    start_time = time.time()
+                    start_time -= 40 # we're connected. let's not wait this long
                     break
 
         if not self.input_listener:
