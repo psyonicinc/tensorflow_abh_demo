@@ -23,14 +23,14 @@ import termios
 import tty
 from threading import Thread
 
-class KeyboardDisplayer:
+class SerialDisplayer:
     def __init__(self, use_grip_cmds, CP210x_only, camera_capture=0):
         self.use_grip_cmds = use_grip_cmds
         self.CP210x_only = CP210x_only
         self.camera_capture = camera_capture
+        self.input_listener = None # meant to be a serial object
         
         self.pressed = ''
-        self.listener = Thread(target=self.get_key)
         self.screen_saver = cv2.imread("default_img.jpg", cv2.IMREAD_COLOR) 
         
         # Find all serial ports
@@ -61,6 +61,20 @@ class KeyboardDisplayer:
                 print(traceback.format_exc())
 
         print("found ", len(self.slist), "ports")
+
+        start_time = time.time()
+        print("connecting input handler...")
+        while(time.time() - start_time < 10):
+            for i in range(len(self.slist)):
+                if (self.slist[i].inWaiting() > 0):
+                    self.input_listener = self.slist[i]
+                    self.slist.pop(i)
+                    start_time = time.time()
+                    break
+
+        if not self.input_listener:
+            raise RuntimeError("No switch found. Cannot launch program")
+
         for s in self.slist:
             buf = create_misc_msg(0x50, 0xC2)
             print("writing thumb filter message on com port: ", s)
@@ -70,7 +84,7 @@ class KeyboardDisplayer:
             raise RuntimeError("no serial ports connected")
         else:
             self.n = len(self.slist)
-    
+
     def run(self):
         """main loop that runs"""
         lpf_fps_sos = signal.iirfilter(2, Wn=0.7, btype='lowpass', analog=False, ftype='butter', output='sos', fs=30)	#filter for the fps counter
@@ -85,8 +99,6 @@ class KeyboardDisplayer:
         cap.set(cv2.CAP_PROP_FPS, 90)
         fps = int(cap.get(5))
         print("fps: ", fps)
-
-        #self.listener.start() # thread listens to keystrokes 
         
         with mp_hands.Hands(
 				max_num_hands=self.n,
@@ -108,6 +120,12 @@ class KeyboardDisplayer:
             show_webcam = False
 
             while True:
+                data_char = self.input_listener.read(self.input_listener.inWaiting()).decode('ascii') # get our input
+                if data_char == 'A':
+                    show_webcam = True
+                elif data_char == 'X':
+                    show_webcam = False
+
                 if show_webcam:
                     if not cap.isOpened():
                         raise RuntimeError("could not open webcam. cap.isOpened() return 'False' in run()")
@@ -241,6 +259,5 @@ if __name__=="__main__":
     parser.add_argument('--camera_capture', type=int, help="opencv capture number", default=0)
     args = parser.parse_args()
     
-    displayer = KeyboardDisplayer(use_grip_cmds=args.do_grip_cmds, CP210x_only=args.CP210x_only, camera_capture=args.camera_capture)
+    displayer = SerialDisplayer(use_grip_cmds=args.do_grip_cmds, CP210x_only=args.CP210x_only, camera_capture=args.camera_capture)
     displayer.run()
-	
