@@ -24,6 +24,15 @@ import termios
 import tty
 from threading import Thread
 
+# process 5/3
+import subprocess
+import pyautogui
+
+def get_screen_resolution():
+    output = subprocess.Popen('xrandr | grep "\*" | cut -d" " -f4',shell=True, stdout=subprocess.PIPE).communicate()[0]
+    resolution = output.split()[0].split(b'x')
+    return {'width': resolution[0], 'height': resolution[1]}
+
 class SerialDisplayer:
     def __init__(self, use_grip_cmds, CP210x_only, camera_capture=0):
         self.use_grip_cmds = use_grip_cmds
