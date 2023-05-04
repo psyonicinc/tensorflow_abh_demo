@@ -42,7 +42,8 @@ class SerialDisplayer:
         
         self.pressed = ''
         self.screen_saver = cv2.imread("default_img.jpg", cv2.IMREAD_COLOR) 
-        
+        self.dim = pyautogui.size()
+
         # Find all serial ports
         self.slist = []
         com_ports_list = list(list_ports.comports())
@@ -274,7 +275,9 @@ class SerialDisplayer:
                 left = int(np.max([0,xrem/2]))
                 right = left
                 
-                imgresized = cv2.resize(image, (int(image.shape[1]*uniform_mult),int(image.shape[0]*uniform_mult)), interpolation=cv2.INTER_AREA)
+                # Pick which 'imgresized' will give you the right fullscreen you want
+                # imgresized = cv2.resize(image, (int(image.shape[1]*uniform_mult),int(image.shape[0]*uniform_mult)), interpolation=cv2.INTER_AREA)
+                imgresized = cv2.resize(image, (self.dim[0], self.dim[1]), interpolation=cv2.INTER_CUBIC)
                 dst = cv2.copyMakeBorder(imgresized,top,bottom,left,right, cv2.BORDER_CONSTANT, None, value = 0)
                 cv2.imshow('MediaPipe Hands', dst)
                 
