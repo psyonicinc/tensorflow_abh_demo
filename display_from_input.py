@@ -97,6 +97,30 @@ class SerialDisplayer:
         else:
             self.n = len(self.slist)
 
+    def wave_hand(self, fpos):
+        """helper function to run handwave"""
+        try:
+            for i in range(len(fpos)):
+                ft = time.time()*1.5 + i*(2*np.pi)/12
+                fpos[i] = (0.5*math.sin(ft)+0.5)*45 + 15
+            fpos[5] = -fpos[5]
+
+            msg = farr_to_barr(0x50, fpos)
+            self.slist[0].write(msg)
+        except:
+            pass 
+        
+        try:
+            for i in range(len(fpos)):
+                ft = time.time()*3 + (i + 6)*(2*np.pi)/12
+                fpos[i] = (0.5*math.sin(ft)+0.5)*45+15
+            fpos[5] = -fpos[5]
+            msg = farr_to_barr(0x50, fpos)
+            self.slist[1].write(msg)
+        except:
+            pass
+
+
     def run(self):
         """main loop that runs"""
         lpf_fps_sos = signal.iirfilter(2, Wn=0.7, btype='lowpass', analog=False, ftype='butter', output='sos', fs=30)	#filter for the fps counter
@@ -130,6 +154,7 @@ class SerialDisplayer:
             send_unsampling_msg_ts = 0
 
             show_webcam = False
+            wave_hand = False
 
             fpos = [15., 15., 15., 15., 15., -15.]	# for the slow hand wave
 
@@ -140,6 +165,10 @@ class SerialDisplayer:
                         show_webcam = True
                     elif data_char == 'X':
                         show_webcam = False
+                    elif data_char == 'Y' and not show_webcam:
+                        wave_hand = True
+                    elif data_char == 'U' and not show_webcam:
+                        wave_hand = False
 
                 if show_webcam:
                     if not cap.isOpened():
@@ -234,26 +263,8 @@ class SerialDisplayer:
                     image = cv2.flip(image, 1)
                 
                 else:
-                    try:
-                        for i in range(len(fpos)):
-                            ft = time.time()*3 + i*(2*np.pi)/12
-                            fpos[i] = (0.5*math.sin(ft)+0.5)*45 + 15
-                        fpos[5] = -fpos[5]
-
-                        msg = farr_to_barr(0x50, fpos)
-                        self.slist[0].write(msg)
-                    except:
-                        pass 
-                    
-                    try:
-                        for i in range(len(fpos)):
-                            ft = time.time()*3 + (i + 6)*(2*np.pi)/12
-                            fpos[i] = (0.5*math.sin(ft)+0.5)*45+15
-                        fpos[5] = -fpos[5]
-                        msg = farr_to_barr(0x50, fpos)
-                        self.slist[1].write(msg)
-                    except:
-                        pass
+                    if (wave_hand):
+                        self.wave_hand(fpos)
 
                     image = self.screen_saver
 
@@ -286,6 +297,9 @@ class SerialDisplayer:
                     break
                 if key == ord('a'):
                     show_webcam = not show_webcam
+                
+                if key == ord('x') and not show_webcam:
+                    wave_hand = not wave_hand
                 
         cap.release()
         for s in self.slist:
