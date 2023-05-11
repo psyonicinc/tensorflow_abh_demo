@@ -99,27 +99,17 @@ class SerialDisplayer:
 
     def wave_hand(self, fpos):
         """helper function to run handwave"""
-        try:
-            for i in range(len(fpos)):
-                ft = time.time()*1.5 + i*(2*np.pi)/12
-                fpos[i] = (0.5*math.sin(ft)+0.5)*45 + 15
-            fpos[5] = -fpos[5]
+        for serial in self.slist:
+            try:
+                for i in range(len(fpos)):
+                    ft = time.time()*1.5 + i*(2*np.pi)/12
+                    fpos[i] = (0.5*math.sin(ft)+0.5)*45 + 15
+                fpos[5] = -fpos[5]
 
-            msg = farr_to_barr(0x50, fpos)
-            self.slist[0].write(msg)
-        except:
-            pass 
-        
-        try:
-            for i in range(len(fpos)):
-                ft = time.time()*3 + (i + 6)*(2*np.pi)/12
-                fpos[i] = (0.5*math.sin(ft)+0.5)*45+15
-            fpos[5] = -fpos[5]
-            msg = farr_to_barr(0x50, fpos)
-            self.slist[1].write(msg)
-        except:
-            pass
-
+                msg = farr_to_barr(0x50, fpos)
+                serial.write(msg)
+            except:
+                pass 
 
     def run(self):
         """main loop that runs"""
@@ -154,7 +144,8 @@ class SerialDisplayer:
             send_unsampling_msg_ts = 0
 
             show_webcam = False
-            wave_hand = False
+            wave_hand = True
+            transition_count = 11
 
             fpos = [15., 15., 15., 15., 15., -15.]	# for the slow hand wave
 
@@ -172,7 +163,7 @@ class SerialDisplayer:
 
                 if show_webcam:
                     if not cap.isOpened():
-                        raise RuntimeError("could not open webcam. cap.isOpened() return 'False' in run()")
+                        raise RuntimeError("could not open webcam. cap.isOpened() returned 'False' in run()")
                     ts = cv2.getTickCount()
                     tdif = ts - tprev
                     tprev = ts
@@ -261,7 +252,7 @@ class SerialDisplayer:
                     fpsfilt, warr_fps = py_sos_iir(fps, warr_fps, lpf_fps_sos[0])
                     print(fpsfilt)
                     image = cv2.flip(image, 1)
-                
+         
                 else:
                     if (wave_hand):
                         self.wave_hand(fpos)
@@ -297,6 +288,7 @@ class SerialDisplayer:
                     break
                 if key == ord('a'):
                     show_webcam = not show_webcam
+                    transition_count = 0
                 
                 if key == ord('x') and not show_webcam:
                     wave_hand = not wave_hand
