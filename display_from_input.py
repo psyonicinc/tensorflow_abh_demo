@@ -34,15 +34,17 @@ def get_screen_resolution():
     return {'width': resolution[0], 'height': resolution[1]}
 
 class SerialDisplayer:
-    def __init__(self, use_grip_cmds, CP210x_only, camera_capture=0):
+    def __init__(self, use_grip_cmds, CP210x_only, camera_capture=0, fade_rate=20):
         self.use_grip_cmds = use_grip_cmds
         self.CP210x_only = CP210x_only
         self.camera_capture = camera_capture
+        self.fade_rate = fade_rate
         self.input_listener = None # meant to be a serial object
         
         self.dim = pyautogui.size()
         self.screen_saver = cv2.imread("default_img.jpg", cv2.IMREAD_COLOR) 
         self.screen_saver = cv2.resize(self.screen_saver, (self.dim[0], self.dim[1]), interpolation=cv2.INTER_CUBIC)
+        self.black_img = np.zeros_like(self.screen_saver)
 
         # Find all serial ports
         self.slist = []
@@ -264,9 +266,9 @@ class SerialDisplayer:
                     print(fpsfilt)
                     image = cv2.flip(image, 1)
                     imgresized = cv2.resize(image, (self.dim[0], self.dim[1]), interpolation=cv2.INTER_CUBIC)
-                    if (transition_count < 10):
-                        fadein = transition_count/10.0
-                        imgresized = cv2.addWeighted(self.screen_saver, 1-fadein, imgresized, fadein, 0)
+                    if (transition_count < self.fade_rate):
+                        fadein = transition_count/float(self.fade_rate)
+                        imgresized = cv2.addWeighted(self.black_img, 1-fadein, imgresized, fadein, 0)
                         transition_count += 1
          
                 else:
@@ -275,12 +277,12 @@ class SerialDisplayer:
 
                     image = self.screen_saver
 
-                    if (transition_count < 20 and cap.isOpened()):
+                    if (transition_count < float(self.fade_rate) and cap.isOpened()):
                         _, webcam_img = cap.read()
                         webcam_img = cv2.flip(webcam_img, 1)
                         webcam_img = cv2.resize(webcam_img, (self.dim[0], self.dim[1]), interpolation=cv2.INTER_CUBIC)
-                        fadein = transition_count/20.0
-                        imgresized = cv2.addWeighted(self.freeze_pic, 1-fadein, self.screen_saver, fadein, 0)
+                        fadein = transition_count/float(self.fade_rate)
+                        imgresized = cv2.addWeighted(self.black_img, 1-fadein, self.screen_saver, fadein, 0)
                         transition_count += 1
                     else:
                         imgresized = image
@@ -307,7 +309,7 @@ class SerialDisplayer:
                 dst = cv2.copyMakeBorder(imgresized,top,bottom,left,right, cv2.BORDER_CONSTANT, None, value = 0)
                 if (show_webcam):
                     self.freeze_pic = cv2.resize(dst, (self.dim[0], self.dim[1]), interpolation=cv2.INTER_CUBIC)
-                cv2.imshow('MediaPipe Hands', dst)
+                cv2.imshow('MediaPipe Hands', imgresized)
                 
                 key = cv2.waitKey(1) & 0xFF 
                 if key == ord('q'):
@@ -333,7 +335,8 @@ if __name__=="__main__":
     parser.add_argument('--do_grip_cmds' , help="Include flag for using grip commands for grip recognitions", action='store_true')
     parser.add_argument('--CP210x_only', help="for aadeel's bad computer", action='store_true')
     parser.add_argument('--camera_capture', type=int, help="opencv capture number", default=0)
+    parser.add_argument('--fade_rate', type=int, help="fade transition speed", default=20)
     args = parser.parse_args()
     
-    displayer = SerialDisplayer(use_grip_cmds=args.do_grip_cmds, CP210x_only=args.CP210x_only, camera_capture=args.camera_capture)
+    displayer = SerialDisplayer(use_grip_cmds=args.do_grip_cmds, CP210x_only=args.CP210x_only, camera_capture=args.camera_capture, fade_rate = args.fade_rate)
     displayer.run()
