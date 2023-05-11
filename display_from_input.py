@@ -40,7 +40,6 @@ class SerialDisplayer:
         self.camera_capture = camera_capture
         self.input_listener = None # meant to be a serial object
         
-        self.pressed = ''
         self.screen_saver = cv2.imread("default_img.jpg", cv2.IMREAD_COLOR) 
         self.dim = pyautogui.size()
 
@@ -82,10 +81,14 @@ class SerialDisplayer:
                     self.slist.pop(i)
                     start_time -= 40 # we're connected. let's not wait this long
                     break
-
+            
         if not self.input_listener:
             print("warning: no input handler found")
             # raise RuntimeError("No switch found. Cannot launch program")
+        else:
+            ir_port = self.input_listener.port
+            self.input_listener.close()
+            self.input_listener = serial.Serial(ir_port,'500000', timeout=1)
 
         for s in self.slist:
             buf = create_misc_msg(0x50, 0xC2)
@@ -151,15 +154,21 @@ class SerialDisplayer:
 
             while True:
                 if self.input_listener:
+                    #data_char = self.input_listener.read(self.input_listener.inWaiting()).decode('')
                     data_char = self.input_listener.read(self.input_listener.inWaiting()).decode('ascii') # get our input
-                    if data_char == 'A':
+                    data_char.replace(' ', '')
+
+                    if 'A' in data_char:
                         show_webcam = True
-                    elif data_char == 'X':
+
+                    elif 'X' in data_char:
                         show_webcam = False
-                    elif data_char == 'Y' and not show_webcam:
-                        wave_hand = True
-                    elif data_char == 'U' and not show_webcam:
-                        wave_hand = False
+
+                    elif 'Y' in data_char and not show_webcam:
+                        wave_hand = not wave_hand
+
+                    elif 'U' in data_char and not show_webcam:
+                        wave_hand = not wave_hand
 
                 if show_webcam:
                     if not cap.isOpened():
