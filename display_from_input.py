@@ -155,14 +155,15 @@ class SerialDisplayer:
             while True:
                 if self.input_listener:
                     #data_char = self.input_listener.read(self.input_listener.inWaiting()).decode('')
-                    data_char = self.input_listener.read(self.input_listener.inWaiting()).decode('ascii') # get our input
-                    data_char.replace(' ', '')
+                    data_char = set(self.input_listener.read(self.input_listener.inWaiting()).decode('ascii')) # get our input
 
                     if 'A' in data_char:
                         show_webcam = True
+                        transition_count = 0
 
                     elif 'X' in data_char:
                         show_webcam = False
+                        transition_count = 0
 
                     elif 'Y' in data_char and not show_webcam:
                         wave_hand = not wave_hand
