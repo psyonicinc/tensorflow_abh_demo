@@ -43,6 +43,7 @@ class SerialDisplayer:
         self.dim = pyautogui.size()
         self.screen_saver = cv2.imread("default_img.jpg", cv2.IMREAD_COLOR) 
         self.screen_saver = cv2.resize(self.screen_saver, (self.dim[0], self.dim[1]), interpolation=cv2.INTER_CUBIC)
+        self.black_img = np.zeros_like(self.screen_saver)
 
         # Find all serial ports
         self.slist = []
@@ -266,7 +267,7 @@ class SerialDisplayer:
                     imgresized = cv2.resize(image, (self.dim[0], self.dim[1]), interpolation=cv2.INTER_CUBIC)
                     if (transition_count < 10):
                         fadein = transition_count/10.0
-                        imgresized = cv2.addWeighted(self.screen_saver, 1-fadein, imgresized, fadein, 0)
+                        imgresized = cv2.addWeighted(self.black_img, 1-fadein, imgresized, fadein, 0)
                         transition_count += 1
          
                 else:
@@ -280,7 +281,7 @@ class SerialDisplayer:
                         webcam_img = cv2.flip(webcam_img, 1)
                         webcam_img = cv2.resize(webcam_img, (self.dim[0], self.dim[1]), interpolation=cv2.INTER_CUBIC)
                         fadein = transition_count/20.0
-                        imgresized = cv2.addWeighted(self.freeze_pic, 1-fadein, self.screen_saver, fadein, 0)
+                        imgresized = cv2.addWeighted(self.black_img, 1-fadein, self.screen_saver, fadein, 0)
                         transition_count += 1
                     else:
                         imgresized = image
