@@ -99,7 +99,7 @@ class SerialDisplayer:
             print("writing thumb filter message on com port: ", s)
             s.write(buf)
         
-        if not (len(self.slist) > 0 and len(self.slist) <= 2): # check if any serial ports are connected
+        if not (len(self.slist) > 0 and len(self.slist) <= 2): # check number of available hands
             raise RuntimeError("no serial ports connected")
         else:
             self.n = len(self.slist)
