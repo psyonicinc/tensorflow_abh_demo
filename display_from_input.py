@@ -42,6 +42,7 @@ class SerialDisplayer:
         self.input_listener = None # meant to be a serial object
         
         self.dim = pyautogui.size()
+        print("here's dim: {} x {}".format(self.dim[0], self.dim[1]))
         self.screen_saver = cv2.imread("default_img.jpg", cv2.IMREAD_COLOR)
         self.original_shape = self.screen_saver.shape
         self.screen_saver = cv2.resize(self.screen_saver, (self.dim[0], self.dim[1]), interpolation=cv2.INTER_CUBIC)
@@ -128,11 +129,12 @@ class SerialDisplayer:
         mp_hands = mp.solutions.hands
 
         # webcam input
-        cap = cv2.VideoCapture(self.camera_capture)
-
+        fourcc = cv2.VideoWriter_fourcc('M','J','P','G')
+        cap = cv2.VideoCapture(self.camera_capture+1+cv2.CAP_DSHOW)
+        cap.set(cv2.CAP_PROP_FOURCC, fourcc)
         cap.set(cv2.CAP_PROP_FPS, 90)
-        cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
-        cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
+        cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1920)
+        cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080)
 
         fps = int(cap.get(5))
         print("fps: ", fps)
