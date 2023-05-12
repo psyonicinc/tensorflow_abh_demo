@@ -42,8 +42,7 @@ class SerialDisplayer:
         self.input_listener = None # meant to be a serial object
         
         self.dim = pyautogui.size()
-        self.screen_saver = cv2.imread("default_img.jpg", cv2.IMREAD_COLOR)
-        self.original_shape = self.screen_saver.shape
+        self.screen_saver = cv2.imread("default_img.jpg", cv2.IMREAD_COLOR) 
         self.screen_saver = cv2.resize(self.screen_saver, (self.dim[0], self.dim[1]), interpolation=cv2.INTER_CUBIC)
         self.black_img = np.zeros_like(self.screen_saver)
 
@@ -129,11 +128,7 @@ class SerialDisplayer:
 
         # webcam input
         cap = cv2.VideoCapture(self.camera_capture)
-
         cap.set(cv2.CAP_PROP_FPS, 90)
-        cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
-        cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
-
         fps = int(cap.get(5))
         print("fps: ", fps)
         
@@ -187,7 +182,6 @@ class SerialDisplayer:
                     tprev = ts
                     fps = cv2.getTickFrequency()/tdif
                     success, image = cap.read()
-                    print("webcam image shape: ", image.shape)
 
                     if not success:
                         print("ignoring empty frame")
@@ -299,12 +293,12 @@ class SerialDisplayer:
                 cv2.setWindowProperty('MediaPipe Hands',  cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
                 
                 (x, y, windowWidth, windowHeight) = cv2.getWindowImageRect('MediaPipe Hands')
-                ydiv = np.floor(windowHeight/imgresized.shape[0])
-                xdiv = np.floor(windowWidth/imgresized.shape[1])
+                ydiv = np.floor(windowHeight/image.shape[0])
+                xdiv = np.floor(windowWidth/image.shape[1])
                 uniform_mult = np.max([1,np.min([xdiv,ydiv])])
                 
-                yrem = (windowHeight - imgresized.shape[0]*uniform_mult)
-                xrem = (windowWidth - imgresized.shape[1]*uniform_mult)
+                yrem = (windowHeight - image.shape[0]*uniform_mult)
+                xrem = (windowWidth - image.shape[1]*uniform_mult)
                 top = int(np.max([0, yrem/2]))
                 bottom = top
                 left = int(np.max([0,xrem/2]))
@@ -315,7 +309,7 @@ class SerialDisplayer:
                 dst = cv2.copyMakeBorder(imgresized,top,bottom,left,right, cv2.BORDER_CONSTANT, None, value = 0)
                 if (show_webcam):
                     self.freeze_pic = cv2.resize(dst, (self.dim[0], self.dim[1]), interpolation=cv2.INTER_CUBIC)
-                cv2.imshow('MediaPipe Hands', dst)
+                cv2.imshow('MediaPipe Hands', imgresized)
                 
                 key = cv2.waitKey(1) & 0xFF 
                 if key == ord('q'):
