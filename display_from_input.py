@@ -34,10 +34,11 @@ def get_screen_resolution():
     return {'width': resolution[0], 'height': resolution[1]}
 
 class SerialDisplayer:
-    def __init__(self, use_grip_cmds, CP210x_only, camera_capture=0, fade_rate=20):
+    def __init__(self, use_grip_cmds, CP210x_only, camera_capture=0, fade_rate=20, no_input=False):
         self.use_grip_cmds = use_grip_cmds
         self.CP210x_only = CP210x_only
         self.camera_capture = camera_capture
+        self.no_input = no_input
         self.fade_rate = fade_rate
         self.input_listener = None # meant to be a serial object
         
@@ -74,16 +75,17 @@ class SerialDisplayer:
 
         print("found ", len(self.slist), "ports")
 
-        start_time = time.time()
-        print("connecting input handler...")
-        while(time.time() - start_time < 5):
-            for i in range(len(self.slist)):
-                if (self.slist[i].inWaiting() > 0):
-                    self.input_listener = self.slist[i]
-                    self.slist.pop(i)
-                    start_time -= 40 # we're connected. let's not wait this long
-                    break
-            
+        if not self.no_input: # if statement if someone doesn't want to spend this time
+            start_time = time.time()
+            print("connecting input handler...")
+            while(time.time() - start_time < 5):
+                for i in range(len(self.slist)):
+                    if (self.slist[i].inWaiting() > 0):
+                        self.input_listener = self.slist[i]
+                        self.slist.pop(i)
+                        start_time -= 40 # we're connected. let's not wait this long
+                        break
+                
         if not self.input_listener:
             print("warning: no input handler found")
             # raise RuntimeError("No switch found. Cannot launch program")
@@ -340,9 +342,10 @@ if __name__=="__main__":
     parser = argparse.ArgumentParser(description='Hand CV Demo Parser')
     parser.add_argument('--do_grip_cmds' , help="Include flag for using grip commands for grip recognitions", action='store_true')
     parser.add_argument('--CP210x_only', help="for aadeel's bad computer", action='store_true')
+    parser.add_argument('--no_input', help="No input handler? Skip input reading step", action='store_true')
     parser.add_argument('--camera_capture', type=int, help="opencv capture number", default=0)
     parser.add_argument('--fade_rate', type=int, help="fade transition speed", default=20)
     args = parser.parse_args()
     
-    displayer = SerialDisplayer(use_grip_cmds=args.do_grip_cmds, CP210x_only=args.CP210x_only, camera_capture=args.camera_capture, fade_rate = args.fade_rate)
+    displayer = SerialDisplayer(use_grip_cmds=args.do_grip_cmds, CP210x_only=args.CP210x_only, camera_capture=args.camera_capture, fade_rate = args.fade_rate, no_input=args.no_input)
     displayer.run()
