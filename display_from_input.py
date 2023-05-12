@@ -42,7 +42,6 @@ class SerialDisplayer:
         self.input_listener = None # meant to be a serial object
         
         self.dim = pyautogui.size()
-        print("here's dim: {} x {}".format(self.dim[0], self.dim[1]))
         self.screen_saver = cv2.imread("default_img.jpg", cv2.IMREAD_COLOR)
         self.original_shape = self.screen_saver.shape
         self.screen_saver = cv2.resize(self.screen_saver, (self.dim[0], self.dim[1]), interpolation=cv2.INTER_CUBIC)
@@ -64,7 +63,7 @@ class SerialDisplayer:
         for p in port:
             try:
                 ser = []
-                if( (self.CP210x_only == False) or  (self.CP210x_only == True and p[1].find('CP210x') != -1) ):
+                if( (self.CP210x_only == False) or  (self.CP210x_only == True and p[1].find('CP210') != -1) ):
                     ser = (serial.Serial(p[0],'460800', timeout = 1))
                     self.slist.append(ser)
                     print ("connected!", p)
@@ -114,7 +113,7 @@ class SerialDisplayer:
 
                 msg = farr_to_barr(0x50, fpos)
                 serial.write(msg)
-                
+
             except:
                 pass 
 
