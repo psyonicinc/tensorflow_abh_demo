@@ -55,10 +55,8 @@ class SerialDisplayer:
 
         for p in com_ports_list:
             if(p):
-                pstr = ""
-                pstr = p
-                port.append(pstr)
-                print("Found: ", pstr)
+                port.append(p)
+                print("Found: ", p)
 
         if not port:
                 print("no port found")
@@ -116,6 +114,7 @@ class SerialDisplayer:
 
                 msg = farr_to_barr(0x50, fpos)
                 serial.write(msg)
+                
             except:
                 pass 
 
@@ -130,7 +129,7 @@ class SerialDisplayer:
 
         # webcam input
         fourcc = cv2.VideoWriter_fourcc('M','J','P','G')
-        cap = cv2.VideoCapture(self.camera_capture+1+cv2.CAP_DSHOW)
+        cap = cv2.VideoCapture(0)
         cap.set(cv2.CAP_PROP_FOURCC, fourcc)
         cap.set(cv2.CAP_PROP_FPS, 90)
         cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1920)
