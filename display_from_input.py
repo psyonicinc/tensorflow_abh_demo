@@ -189,7 +189,7 @@ class SerialDisplayer:
                     tprev = ts
                     fps = cv2.getTickFrequency()/tdif
                     success, image = cap.read()
-                    print("webcam image shape: ", image.shape)
+                    #print("webcam image shape: ", image.shape)
 
                     if not success:
                         print("ignoring empty frame")
