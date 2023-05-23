@@ -64,7 +64,7 @@ class SerialDisplayer:
         for p in port:
             try:
                 ser = []
-                if( (self.CP210x_only == False) or  (self.CP210x_only == True and p[1].find('CP210') != -1) ):
+                if( (self.CP210x_only == False) or  (self.CP210x_only == True and ( (p[1].find('CP210') != -1) or (p[1].find('FT232R') != -1) )) ):
                     ser = (serial.Serial(p[0],'460800', timeout = 1))
                     self.slist.append(ser)
                     print ("connected!", p)
