@@ -34,14 +34,15 @@ def get_screen_resolution():
     return {'width': resolution[0], 'height': resolution[1]}
 
 class SerialDisplayer:
-    def __init__(self, use_grip_cmds, CP210x_only, camera_capture=0, fade_rate=20, no_input=False):
+    def __init__(self, use_grip_cmds, CP210x_only, no_input=False, reverse=False, camera_capture=0, fade_rate=20):
         self.use_grip_cmds = use_grip_cmds
         self.CP210x_only = CP210x_only
-        self.camera_capture = camera_capture
         self.no_input = no_input
+        self.reverse = reverse
+        self.camera_capture = camera_capture
         self.fade_rate = fade_rate
         self.input_listener = None # meant to be a serial object
-        
+
         self.dim = pyautogui.size()
         self.screen_saver = cv2.imread("default_img.jpg", cv2.IMREAD_COLOR)
         self.original_shape = self.screen_saver.shape
@@ -104,6 +105,9 @@ class SerialDisplayer:
         else:
             self.n = len(self.slist)
 
+        if self.reverse:
+            self.slist.reverse()
+
     def wave_hand(self, fpos):
         """helper function to run handwave"""
         for serial in self.slist:
@@ -153,6 +157,8 @@ class SerialDisplayer:
             for i in range(self.n):
                 abh = AbilityHandBridge()
                 abhlist.append(abh)
+            
+            #abhlist.reverse()
 
             send_unsampling_msg_ts = 0
 
@@ -182,6 +188,9 @@ class SerialDisplayer:
                         wave_hand = not wave_hand
 
                 if show_webcam:
+                    """
+                    mediapipe hand detection
+                    """
                     if not cap.isOpened():
                         raise RuntimeError("could not open webcam. cap.isOpened() returned 'False' in run()")
                     ts = cv2.getTickCount()
@@ -343,9 +352,10 @@ if __name__=="__main__":
     parser.add_argument('--do_grip_cmds' , help="Include flag for using grip commands for grip recognitions", action='store_true')
     parser.add_argument('--CP210x_only', help="for aadeel's bad computer", action='store_true')
     parser.add_argument('--no_input', help="No input handler? Skip input reading step", action='store_true')
+    parser.add_argument('--reverse', help="reverse the order of the hands in order to map detections properly", action='store_true')
     parser.add_argument('--camera_capture', type=int, help="opencv capture number", default=0)
     parser.add_argument('--fade_rate', type=int, help="fade transition speed", default=20)
     args = parser.parse_args()
     
-    displayer = SerialDisplayer(use_grip_cmds=args.do_grip_cmds, CP210x_only=args.CP210x_only, camera_capture=args.camera_capture, fade_rate = args.fade_rate, no_input=args.no_input)
+    displayer = SerialDisplayer(use_grip_cmds=args.do_grip_cmds, CP210x_only=args.CP210x_only, no_input=args.no_input, reverse=args.reverse, camera_capture=args.camera_capture, fade_rate=args.fade_rate)
     displayer.run()
