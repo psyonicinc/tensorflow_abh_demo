@@ -65,7 +65,7 @@ class SerialDisplayer:
         for p in port:
             try:
                 ser = []
-                if( (self.CP210x_only == False) or  (self.CP210x_only == True and p[1].find('CP210') != -1) ):
+                if( (self.CP210x_only == False) or  (self.CP210x_only == True and ( (p[1].find('CP210') != -1) or (p[1].find('FT232R') != -1) )) ):
                     ser = (serial.Serial(p[0],'460800', timeout = 1))
                     self.slist.append(ser)
                     print ("connected!", p)
@@ -76,7 +76,7 @@ class SerialDisplayer:
 
         print("found ", len(self.slist), "ports")
 
-        if not self.no_input: # if statement if someone doesn't want to spend this time
+        if not self.no_input: # input checking if statement
             start_time = time.time()
             print("connecting input handler...")
             while(time.time() - start_time < 5):
@@ -113,7 +113,7 @@ class SerialDisplayer:
         for serial in self.slist:
             try:
                 for i in range(len(fpos)):
-                    ft = time.time()*1.5 + i*(2*np.pi)/12
+                    ft = time.time()*1.25 + i*(2*np.pi)/12
                     fpos[i] = (0.5*math.sin(ft)+0.5)*45 + 15
                 fpos[5] = -fpos[5]
 
@@ -137,8 +137,8 @@ class SerialDisplayer:
         cap = cv2.VideoCapture(0)
         cap.set(cv2.CAP_PROP_FOURCC, fourcc)
         cap.set(cv2.CAP_PROP_FPS, 90)
-        cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1920)
-        cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080)
+        cap.set(cv2.CAP_PROP_FRAME_WIDTH, int(1920*720/1080))
+        cap.set(cv2.CAP_PROP_FRAME_HEIGHT, int(1080*720/1080))
 
         fps = int(cap.get(5))
         print("fps: ", fps)
@@ -198,7 +198,7 @@ class SerialDisplayer:
                     tprev = ts
                     fps = cv2.getTickFrequency()/tdif
                     success, image = cap.read()
-                    print("webcam image shape: ", image.shape)
+                    #print("webcam image shape: ", image.shape)
 
                     if not success:
                         print("ignoring empty frame")
