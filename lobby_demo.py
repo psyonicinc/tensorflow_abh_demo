@@ -358,5 +358,6 @@ if __name__=="__main__":
     parser.add_argument('--camera_capture', type=int, help="opencv capture number", default=0)
     parser.add_argument('--fade_rate', type=int, help="fade transition speed", default=20)
     args = parser.parse_args()
+    
     displayer = SerialDisplayer(use_grip_cmds=args.do_grip_cmds, CP210x_only=args.CP210x_only, no_input=args.no_input, reverse=args.reverse, camera_capture=args.camera_capture, fade_rate=args.fade_rate)
     displayer.run()
