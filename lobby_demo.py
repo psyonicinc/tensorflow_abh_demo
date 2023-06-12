@@ -27,11 +27,12 @@ from threading import Thread
 # process 5/3
 import subprocess
 import pyautogui
+import os
 
 def get_screen_resolution():
     output = subprocess.Popen('xrandr | grep "\*" | cut -d" " -f4',shell=True, stdout=subprocess.PIPE).communicate()[0]
     resolution = output.split()[0].split(b'x')
-    return {'width': resolution[0], 'height': resolution[1]}
+    return {'width': resolution[0], 'height': resolution[1]}    
 
 class SerialDisplayer:
     def __init__(self, use_grip_cmds, CP210x_only, no_input=False, reverse=False, camera_capture=0, fade_rate=20):
@@ -346,6 +347,7 @@ class SerialDisplayer:
             self.input_listener.close()
 
     cv2.destroyAllWindows()
+    #os.system("killall -9 unclutter")
 
 if __name__=="__main__":
     parser = argparse.ArgumentParser(description='Hand CV Demo Parser')
@@ -356,6 +358,5 @@ if __name__=="__main__":
     parser.add_argument('--camera_capture', type=int, help="opencv capture number", default=0)
     parser.add_argument('--fade_rate', type=int, help="fade transition speed", default=20)
     args = parser.parse_args()
-    
     displayer = SerialDisplayer(use_grip_cmds=args.do_grip_cmds, CP210x_only=args.CP210x_only, no_input=args.no_input, reverse=args.reverse, camera_capture=args.camera_capture, fade_rate=args.fade_rate)
     displayer.run()
