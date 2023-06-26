@@ -147,7 +147,7 @@ class SerialDisplayer:
         with mp_hands.Hands(
 				max_num_hands=self.n,
 				model_complexity=0,
-				min_detection_confidence=0.66,
+				min_detection_confidence=0.33,
 				min_tracking_confidence=0.66) as hands:
             
             tprev = cv2.getTickCount()
