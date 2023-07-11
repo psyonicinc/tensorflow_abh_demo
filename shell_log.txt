@@ -1,0 +1,18 @@
+Found:  /dev/ttyS0 - ttyS0
+Found:  /dev/ttyUSB2 - FT232R USB UART - FT232R USB UART
+Found:  /dev/ttyUSB1 - CP2102 USB to UART Bridge Controller - CP2102 USB to UART Bridge Controller
+Found:  /dev/ttyUSB0 - FT232R USB UART - FT232R USB UART
+connected! /dev/ttyUSB2 - FT232R USB UART - FT232R USB UART
+connected! /dev/ttyUSB1 - CP2102 USB to UART Bridge Controller - CP2102 USB to UART Bridge Controller
+connected! /dev/ttyUSB0 - FT232R USB UART - FT232R USB UART
+found  3 ports
+warning: no input handler found
+writing thumb filter message on com port:  Serial<id=0x7f1d5d3e2a70, open=True>(port='/dev/ttyUSB2', baudrate=460800, bytesize=8, parity='N', stopbits=1, timeout=1, xonxoff=False, rtscts=False, dsrdtr=False)
+writing thumb filter message on com port:  Serial<id=0x7f1d5d3e2a40, open=True>(port='/dev/ttyUSB1', baudrate=460800, bytesize=8, parity='N', stopbits=1, timeout=1, xonxoff=False, rtscts=False, dsrdtr=False)
+writing thumb filter message on com port:  Serial<id=0x7f1d0eb1afb0, open=True>(port='/dev/ttyUSB0', baudrate=460800, bytesize=8, parity='N', stopbits=1, timeout=1, xonxoff=False, rtscts=False, dsrdtr=False)
+Traceback (most recent call last):
+  File "/home/psyonic-mini-pc/Desktop/tensorflow_abh_demo/./lobby_demo.py", line 361, in <module>
+    displayer = SerialDisplayer(use_grip_cmds=args.do_grip_cmds, CP210x_only=args.CP210x_only, no_input=args.no_input, reverse=args.reverse, camera_capture=args.camera_capture, fade_rate=args.fade_rate)
+  File "/home/psyonic-mini-pc/Desktop/tensorflow_abh_demo/./lobby_demo.py", line 104, in __init__
+    raise RuntimeError("no serial ports connected")
+RuntimeError: no serial ports connected

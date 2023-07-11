@@ -66,7 +66,7 @@ class SerialDisplayer:
         for p in port:
             try:
                 ser = []
-                if( (self.CP210x_only == False) or  (self.CP210x_only == True and ( (p[1].find('CP210') != -1) or (p[1].find('FT232R') != -1) )) ):
+                if( (not self.CP210x_only) or  (self.CP210x_only == True and ( (p[1].find('CP210') != -1) or (p[1].find('FT232R') != -1) )) ):
                     ser = (serial.Serial(p[0],'460800', timeout = 1))
                     self.slist.append(ser)
                     print ("connected!", p)
@@ -83,8 +83,7 @@ class SerialDisplayer:
             while(time.time() - start_time < 5):
                 for i in range(len(self.slist)):
                     if (self.slist[i].inWaiting() > 0):
-                        self.input_listener = self.slist[i]
-                        self.slist.pop(i)
+                        self.input_listener = self.slist.pop(i)
                         start_time -= 40 # we're connected. let's not wait this long
                         break
                 
