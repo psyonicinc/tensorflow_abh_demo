@@ -1,0 +1,6 @@
+mediapipe
+numpy
+matplotlib
+pyserial
+scipy
+opencv-python
