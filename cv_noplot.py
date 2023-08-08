@@ -47,7 +47,7 @@ if __name__ == "__main__":
 	for p in port:
 		try:
 			ser = []
-			if( (args.CP210x_only == False) or  (args.CP210x_only == True and p[1].find('CP210x') != -1) ):
+			if( (args.CP210x_only == False) or  (args.CP210x_only == True and (p[1].find('CP210x') != -1) or p[1].find('USB Serial Port') != -1) ):
 				ser = (serial.Serial(p[0],'460800', timeout = 1))
 				slist.append(ser)
 				print ("connected!", p)

@@ -30,7 +30,7 @@ if __name__ == "__main__":
 	else:
 		print("Using hardloaded commands")
 	
-	udp_server_addr = ("192.168.29.255", 50134)
+	udp_server_addr = ("127.0.0.1", 50134)
 	client_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 	client_socket.settimeout(1.0)
 
@@ -127,11 +127,11 @@ if __name__ == "__main__":
 					#if port:
 					
 					# Write the finger array out over UART to the hand!
-					msg = udp_pkt(abhlist[idx].fpos)
+					msg = udp_pkt(abhlist[0].fpos)	#do only 1 of the hands
 					barr = bytearray(msg)					
 					client_socket.sendto(barr, udp_server_addr)
 					
-
+ 
 					#draw landmarks of the hand we found
 					hand_landmarks = results.multi_hand_landmarks[idx]
 					mp_drawing.draw_landmarks(
