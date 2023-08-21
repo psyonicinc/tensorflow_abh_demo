@@ -77,7 +77,7 @@ class SerialDisplayer:
 
         print("found ", len(self.slist), "ports")
 
-        if not self.no_input: # input checking if statement
+        if not self.no_input: # input checking argument if statement
             start_time = time.time()
             print("connecting input handler...")
             while(time.time() - start_time < 5):
@@ -86,7 +86,13 @@ class SerialDisplayer:
                         self.input_listener = self.slist.pop(i)
                         start_time -= 40 # we're connected. let's not wait this long
                         break
-                
+
+        if not (len(self.slist) > 0 and len(self.slist) <= 2): # check number of available hands
+            raise RuntimeError("no serial ports connected")
+        else:
+            self.n = len(self.slist)
+
+
         if not self.input_listener:
             print("warning: no input handler found")
             # raise RuntimeError("No switch found. Cannot launch program")
@@ -100,10 +106,6 @@ class SerialDisplayer:
             print("writing thumb filter message on com port: ", s)
             s.write(buf)
         
-        if not (len(self.slist) > 0 and len(self.slist) <= 2): # check number of available hands
-            raise RuntimeError("no serial ports connected")
-        else:
-            self.n = len(self.slist)
 
         if self.reverse:
             self.slist.reverse()
@@ -170,8 +172,9 @@ class SerialDisplayer:
 
             while True:
                 if self.input_listener:
-                    #data_char = self.input_listener.read(self.input_listener.inWaiting()).decode('')
+                    #data_char = self.input_listener.read(self.input_listener.inWaiting())
                     data_char = set(self.input_listener.read(self.input_listener.inWaiting()).decode('ascii')) # get our input
+                    print("here's data_char: ", data_char)
 
                     if 'A' in data_char:
                         show_webcam = True
@@ -191,102 +194,101 @@ class SerialDisplayer:
                     """
                     mediapipe hand detection
                     """
-                    if not cap.isOpened():
-                        raise RuntimeError("could not open webcam. cap.isOpened() returned 'False' in run()")
-                    ts = cv2.getTickCount()
-                    tdif = ts - tprev
-                    tprev = ts
-                    fps = cv2.getTickFrequency()/tdif
-                    success, image = cap.read()
-                    #print("webcam image shape: ", image.shape)
+                    if cap.isOpened():
+                        ts = cv2.getTickCount()
+                        tdif = ts - tprev
+                        tprev = ts
+                        fps = cv2.getTickFrequency()/tdif
+                        success, image = cap.read()
+                        #print("webcam image shape: ", image.shape)
 
-                    if not success:
-                        print("ignoring empty frame")
-                        continue
-                    
-                    image.flags.writeable = False
-                    image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR) 
-                    results = hands.process(image)
-                    image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB) # comment/uncomment if color output looks funny
-                    if results.multi_hand_landmarks:
-                        num_writes = 1
-                        if(len(results.multi_hand_landmarks) == 2 and results.multi_handedness[0].classification[0].index != results.multi_handedness[1].classification[0].index):
-                            num_writes = 2
-                        for idx in range(num_writes):
-                            # log time for plotting
-                            t = time.time()
-                            ser_idx = results.multi_handedness[idx].classification[0].index
-                            if (self.n == 1):
-                                ser_idx = 0
+                        if not success:
+                            print("ignoring empty frame")
+                            continue
+                        
+                        image.flags.writeable = False
+                        image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR) 
+                        results = hands.process(image)
+                        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB) # comment/uncomment if color output looks funny
+                        if results.multi_hand_landmarks:
+                            num_writes = 1
+                            if(len(results.multi_hand_landmarks) == 2 and results.multi_handedness[0].classification[0].index != results.multi_handedness[1].classification[0].index):
+                                num_writes = 2
+                            for idx in range(num_writes):
+                                # log time for plotting
+                                t = time.time()
+                                ser_idx = results.multi_handedness[idx].classification[0].index
+                                if (self.n == 1):
+                                    ser_idx = 0
 
-                            abhlist[idx].update(mp_hands, results.multi_hand_landmarks[idx].landmark, results.multi_handedness[idx].classification[0].index)
+                                abhlist[idx].update(mp_hands, results.multi_hand_landmarks[idx].landmark, results.multi_handedness[idx].classification[0].index)
 
-                            if abhlist[idx].is_set_grip == 1 and (abhlist[idx].grip_word == 1 or abhlist[idx].grip_word == 3) and self.use_grip_cmds == 1:
-                                grip = 0x00
-                                if (abhlist[idx].grip_word == 1):
-                                    grip = 0x3
-                                elif (abhlist[idx].grip_word ==3):
-                                    grip = 0x4
-                                if (prev_cmd_was_grip[ser_idx] == 0):
+                                if abhlist[idx].is_set_grip == 1 and (abhlist[idx].grip_word == 1 or abhlist[idx].grip_word == 3) and self.use_grip_cmds == 1:
+                                    grip = 0x00
+                                    if (abhlist[idx].grip_word == 1):
+                                        grip = 0x3
+                                    elif (abhlist[idx].grip_word ==3):
+                                        grip = 0x4
+                                    if (prev_cmd_was_grip[ser_idx] == 0):
+                                        msg = send_grip_cmd(0x50, grip, 0xFF)
+                                        self.slist[ser_idx].write(msg)
+                                        time.sleep(0.01)
+                                        msg = send_grip_cmd(0x50, 0x00, 0xFF)
+                                        self.slist[ser_idx].write(msg)
+                                        time.sleep(0.01)
+                                        prev_cmd_was_grip[ser_idx] = 1
                                     msg = send_grip_cmd(0x50, grip, 0xFF)
-                                    self.slist[ser_idx].write(msg)
-                                    time.sleep(0.01)
-                                    msg = send_grip_cmd(0x50, 0x00, 0xFF)
-                                    self.slist[ser_idx].write(msg)
-                                    time.sleep(0.01)
-                                    prev_cmd_was_grip[ser_idx] = 1
-                                msg = send_grip_cmd(0x50, grip, 0xFF)
-                            else:
-                                prev_cmd_was_grip[idx] = 0
-                                # Write the finger array out over UART to the hand!
-                                msg = farr_to_barr(0x50, abhlist[idx].fpos)
-                            
-                            self.slist[ser_idx].write(msg)
+                                else:
+                                    prev_cmd_was_grip[idx] = 0
+                                    # Write the finger array out over UART to the hand!
+                                    msg = farr_to_barr(0x50, abhlist[idx].fpos)
+                                
+                                self.slist[ser_idx].write(msg)
 
-                            # draw landmarks of the hand we found
-                            hand_landmarks = results.multi_hand_landmarks[idx]
-                            mp_drawing.draw_landmarks(
-                                image,
-                                hand_landmarks,
-                                mp_hands.HAND_CONNECTIONS,
-                                mp_drawing_styles.get_default_hand_landmarks_style(),
-                                mp_drawing_styles.get_default_hand_connections_style()
-                            )
+                                # draw landmarks of the hand we found
+                                hand_landmarks = results.multi_hand_landmarks[idx]
+                                mp_drawing.draw_landmarks(
+                                    image,
+                                    hand_landmarks,
+                                    mp_hands.HAND_CONNECTIONS,
+                                    mp_drawing_styles.get_default_hand_landmarks_style(),
+                                    mp_drawing_styles.get_default_hand_connections_style()
+                                )
 
-                            # Render a static point in the base frame of the model. Visualization of the position-orientation accuracy.
-                            # Point should be just in front of the palm. Compensated for handedness
-                            static_point_b = np.array([4.16, 1.05, -1.47*abhlist[idx].handed_sign, 1])*abhlist[idx].scale
-                            static_point_b[3] = 1 # remove scaling that wasapplied to the immutable '1'
-                            neutral_thumb_w = abhlist[idx].hw_b.dot(static_point_b) # get dot position in world coordinates for a visual tag/reference
-                            l_list = landmark_pb2.NormalizedLandmarkList(
-                                landmark=[
-                                    v4_to_landmark(neutral_thumb_w)
-                                ]
-                            )
-                            mp_drawing.draw_landmarks(
-                                image,
-                                l_list,
-                                [],
-                                mp_drawing_styles.get_default_hand_landmarks_style(),
-                                mp_drawing_styles.get_default_hand_connections_style()
-                            )
+                                # Render a static point in the base frame of the model. Visualization of the position-orientation accuracy.
+                                # Point should be just in front of the palm. Compensated for handedness
+                                static_point_b = np.array([4.16, 1.05, -1.47*abhlist[idx].handed_sign, 1])*abhlist[idx].scale
+                                static_point_b[3] = 1 # remove scaling that wasapplied to the immutable '1'
+                                neutral_thumb_w = abhlist[idx].hw_b.dot(static_point_b) # get dot position in world coordinates for a visual tag/reference
+                                l_list = landmark_pb2.NormalizedLandmarkList(
+                                    landmark=[
+                                        v4_to_landmark(neutral_thumb_w)
+                                    ]
+                                )
+                                mp_drawing.draw_landmarks(
+                                    image,
+                                    l_list,
+                                    [],
+                                    mp_drawing_styles.get_default_hand_landmarks_style(),
+                                    mp_drawing_styles.get_default_hand_connections_style()
+                                )
 
-                    t_seconds = ts/cv2.getTickFrequency()
-                    if (t_seconds > send_unsampling_msg_ts):
-                        send_unsampling_msg_ts = t_seconds + 10
-                        for i in range(self.n):
-                            msg = create_misc_msg(0x50, 0xC2)
-                            print("sending: ", [ hex(b) for b in msg ], "to ser device ", i)
-                            self.slist[i].write(msg)
+                        t_seconds = ts/cv2.getTickFrequency()
+                        if (t_seconds > send_unsampling_msg_ts):
+                            send_unsampling_msg_ts = t_seconds + 10
+                            for i in range(self.n):
+                                msg = create_misc_msg(0x50, 0xC2)
+                                print("sending: ", [ hex(b) for b in msg ], "to ser device ", i)
+                                self.slist[i].write(msg)
 
-                    fpsfilt, warr_fps = py_sos_iir(fps, warr_fps, lpf_fps_sos[0])
-                    print(fpsfilt)
-                    image = cv2.flip(image, 1)
-                    imgresized = cv2.resize(image, (self.dim[0], self.dim[1]), interpolation=cv2.INTER_CUBIC)
-                    if (transition_count < self.fade_rate):
-                        fadein = transition_count/float(self.fade_rate)
-                        imgresized = cv2.addWeighted(self.black_img, 1-fadein, imgresized, fadein, 0)
-                        transition_count += 1
+                        fpsfilt, warr_fps = py_sos_iir(fps, warr_fps, lpf_fps_sos[0])
+                        print(fpsfilt)
+                        image = cv2.flip(image, 1)
+                        imgresized = cv2.resize(image, (self.dim[0], self.dim[1]), interpolation=cv2.INTER_CUBIC)
+                        if (transition_count < self.fade_rate):
+                            fadein = transition_count/float(self.fade_rate)
+                            imgresized = cv2.addWeighted(self.black_img, 1-fadein, imgresized, fadein, 0)
+                            transition_count += 1
          
                 else:
                     if (wave_hand):
