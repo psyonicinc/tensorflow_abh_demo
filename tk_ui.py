@@ -18,6 +18,9 @@ cap = cv2.VideoCapture(0)
 cap.set(cv2.CAP_PROP_FRAME_WIDTH, dim[0])
 cap.set(cv2.CAP_PROP_FRAME_HEIGHT, dim[1])
 
+if not cap.isOpened():
+    raise RuntimeError("cap.isOpened() returned false")
+
 # event handlers:
 def close_win(e):
     window.destroy()
@@ -50,6 +53,7 @@ def main_task():
         opencv_image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGBA)
         captured_image = Image.fromarray(opencv_image).resize((dim[0], dim[1]))
         photo_img = ImageTk.PhotoImage(image=captured_image)
+        image_label.photo_image = photo_img
         image_label.config(image=photo_img)
 
     else:
