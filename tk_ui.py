@@ -14,9 +14,13 @@ wave_hand=True
 
 dim = pyautogui.size()
 
+# webcam input
+fourcc = cv2.VideoWriter_fourcc('M','J','P','G')
 cap = cv2.VideoCapture(0)
-cap.set(cv2.CAP_PROP_FRAME_WIDTH, dim[0])
-cap.set(cv2.CAP_PROP_FRAME_HEIGHT, dim[1])
+cap.set(cv2.CAP_PROP_FOURCC, fourcc)
+cap.set(cv2.CAP_PROP_FPS, 90)
+cap.set(cv2.CAP_PROP_FRAME_WIDTH, int(1920*720/1080))
+cap.set(cv2.CAP_PROP_FRAME_HEIGHT, int(1080*720/1080))
 
 if not cap.isOpened():
     raise RuntimeError("cap.isOpened() returned false")
@@ -49,7 +53,7 @@ def main_task():
     global screen_saver_img_obj
     if show_webcam:
         print("webcam showed!")
-        _, frame = cap.read()
+        success, frame = cap.read()
         opencv_image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGBA)
         captured_image = Image.fromarray(opencv_image).resize((dim[0], dim[1]))
         photo_img = ImageTk.PhotoImage(image=captured_image)
