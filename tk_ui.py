@@ -2,19 +2,100 @@ import tkinter as tk
 from PIL import ImageTk, Image
 import cv2 
 import pyautogui
+import mediapipe as mp
+import numpy as np
+import argparse
+import serial
+from serial.tools import list_ports
 
+# debug
+import traceback
+
+# local imports
+from abh_api_core import *
+from rtfilt import *
+from gestures import *
+from abh_get_fpos import *
+from vect_tools import *
 
 class TKUI(tk.Tk):
     def __init__(self, use_grip_cmds, CP210x_only, no_input=False, reverse=False, camera_capture=0, fade_rate=20):
-        self.use_grip_cmds = use_grip_cmds
-        self.CP210x_only = CP210x_only
-        self.reverse = reverse
+        self.use_grip_cmds: bool = use_grip_cmds
+        self.CP210x_only: bool = CP210x_only
+        self.no_input: bool = no_input
+        self.reverse: bool = reverse
         self.camera_capture = camera_capture
         self.fade_rate = fade_rate
-        
-        self.label = tk.Label(self)
+        self.input_listener = None # meant to be a serial object
 
+        self.dim = pyautogui.size()
+        self.screen_saver = ImageTk.PhotoImage(Image.open("default_img.jpg").resize(self.dim[0], self.dim[1]))
+        self.black_img = np.zeros((dim[0], dim[1]))
+
+        self.label = tk.Label(self)
+        self.label.pack()
+
+        self.show_webcam = False
+        self.wave_hand = True
+
+        self.bind('q', self.close_window)
+        self.bind('a', self.switch_img)
+        self.bind('x', self.switch_handwave)
+
+        # Find all serial ports
+        self.slist = []
+        com_ports_list = list(list_ports.comports())
+        port = []
+
+        for p in com_ports_list:
+            if (p):
+                port.append(p)
+                print("Found: ", p)
+        
+        if not port:
+            print("no port found")
+
+        for p in port:
+            try:
+                ser = []
+                if ( (not self.CP210x_only) or  (self.CP210x_only == True and ( (p[1].find('CP210') != -1) or (p[1].find('FT232R') != -1) )) ):
+                    ser = (serial.Serial(p[0], '460800', timeout=1))
+                    self.slist.append(ser)
+                    print("connected!", p)
+            except Exception:
+                print("Failed to connect. here's traceback: ")
+                print(traceback.format_exc)
+        
+        self.n = len(self.slist)
+        if not (self.n > 0 and self.n <= 2): # if 0 < self.n <= 2 is false
+            raise RuntimeError("no serial ports connected")
+        
+        print("found ", len(self.slist), " ports" )
+        
+        # TODO: IR sensor input listeners 
+
+        if self.reverse:
+            self.slist.reverse()
+
+
+    def handwave(self, fpos):
         pass
+    
+    # event handlers
+    def close_window(self, e):
+        pass
+
+    def switch_img(self, e):
+        pass
+
+    def switch_handwave(self, e):
+        pass
+
+    # the function called in our mainloop
+    def update(self):
+        # here's what mainloop calls
+        pass
+
 
 window = tk.Tk()
 window.attributes('-fullscreen', True)
@@ -23,7 +104,7 @@ image_label = tk.Label(window)
 image_label.pack()
 
 show_webcam = False
-wave_hand=True
+wave_hand = True
 
 dim = pyautogui.size()
 

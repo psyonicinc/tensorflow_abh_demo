@@ -61,7 +61,7 @@ class SerialDisplayer:
                 print("Found: ", p)
 
         if not port:
-                print("no port found")
+            print("no port found")
 
         for p in port:
             try:
@@ -75,7 +75,7 @@ class SerialDisplayer:
                 print("Failed to connect. here's traceback: ")
                 print(traceback.format_exc())
 
-        print("found ", len(self.slist), "ports")
+        print("found ", len(self.slist), " ports")
 
         if not self.no_input: # input checking argument if statement
             start_time = time.time()
