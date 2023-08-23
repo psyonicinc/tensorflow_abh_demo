@@ -38,6 +38,9 @@ if __name__ == "__main__":
 	client_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 	client_socket.settimeout(0)
 
+	hose_on_cmd = "activate_hose"
+	print("sending command: "+hose_on_cmd+" to: "+str(addr))
+	client_socket.sendto(bytearray(hose_on_cmd,encoding="utf8"),udp_server_addr)
 	#number of hands
 	n = 1
 	
@@ -188,5 +191,7 @@ if __name__ == "__main__":
 
 			fpsfilt, warr_fps = py_sos_iir(fps, warr_fps, lpf_fps_sos[0])
 			# print (fpsfilt)
-
+	
+	client_socket.sendto(bytearray("deactivate_hose",encoding="utf8"),udp_server_addr)
+	
 	cap.release()
