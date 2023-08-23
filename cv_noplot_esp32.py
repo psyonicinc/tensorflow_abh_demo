@@ -15,6 +15,46 @@ from abh_get_fpos import *
 import argparse
 import socket
 
+def locate_server_from_bkst_query(port):
+	hostname = socket.gethostname()
+	addr=socket.gethostbyname(hostname)
+	print("Host IP Addr: "+addr)
+	addrmod = addr
+	dotidx = len(addrmod)-1
+	for i in range(len(addrmod)-1,0, -1):
+		if(addrmod[i] == '.'):
+			dotidx = i
+			break
+	lastoctet = addrmod[dotidx+1:len(addrmod)]
+	addrmod = addrmod.replace(lastoctet,"255")
+	print("Using: "+addrmod+" on port: ",port)
+	udp_server_addr = (addrmod, port)
+	bufsize = 512
+	client_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+	client_socket.settimeout(0.0) #make non blocking
+
+	start_time = time.time()
+
+	try:
+		barr = bytearray("marco",encoding='utf8')
+		client_socket.sendto(barr,udp_server_addr)		
+	except KeyboardInterrupt:
+		print("some fkn error")
+
+	found = 0
+	while(time.time()-start_time < 3):
+		try:
+			pkt,addr = client_socket.recvfrom(bufsize)
+			if(len(pkt) > 0):
+				print("received response from: ",str(addr[0]))
+				found = 1
+				return str(addr[0])
+		except:
+			pass
+	if(found == 0):
+		return str(addrmod)
+
+
 if __name__ == "__main__":
 		
 	parser = argparse.ArgumentParser(description='Hand CV Demo Parser')
@@ -30,7 +70,10 @@ if __name__ == "__main__":
 	else:
 		print("Using hardloaded commands")
 	
-	udp_server_addr = ("192.168.29.255", 3145)
+	hand_port = 34345
+	addr = locate_server_from_bkst_query(hand_port)	
+	print("piping commands to: "+str(addr)+" on port: "+str(hand_port))
+	udp_server_addr = (addr,  hand_port)
 	client_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 	client_socket.settimeout(0)
 
@@ -60,7 +103,7 @@ if __name__ == "__main__":
 	cap = cv2.VideoCapture(args.camera_capture)
 	cap.set(cv2.CAP_PROP_FPS, 90)
 	fps = int(cap.get(5))
-	print("fps:",fps)
+	#print("fps:",fps)
 
 	with mp_hands.Hands(
 			max_num_hands=n,
@@ -129,6 +172,10 @@ if __name__ == "__main__":
 					# Write the finger array out over UART to the hand!
 					msg = farr_to_barr(0x50, abhlist[idx].fpos)
 					barr = bytearray(msg)
+					
+					#loopback. Server (subscriber) expectes straight up floating point with a 32 bit checksum. checksum eval not required
+					# dgram = bytearray(udp_pkt(abhlist[0].fpos))	#publish only 1 hand at a time in this context. 
+					# print("sending ", dgram)
 					client_socket.sendto(barr, udp_server_addr)
 					
 
@@ -167,7 +214,18 @@ if __name__ == "__main__":
 			if cv2.waitKey(1) & 0xFF == 27:
 				break
 
+			t_seconds = ts/cv2.getTickFrequency()
+			if(t_seconds > send_upsampling_msg_ts):
+				send_upsampling_msg_ts = t_seconds + 10
+				for i in range(0,n):
+					msg = create_misc_msg(0x50, 0xC2)
+					print("sending: ", [ hex(b) for b in msg ], "to ser device ", i)
+					barr = bytearray(msg)
+					client_socket.sendto(barr, udp_server_addr)
+					# slist[i].write(msg)
+
+
 			fpsfilt, warr_fps = py_sos_iir(fps, warr_fps, lpf_fps_sos[0])
-			print (fpsfilt)
+			# print (fpsfilt)
 
 	cap.release()
