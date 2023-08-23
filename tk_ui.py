@@ -3,9 +3,22 @@ from PIL import ImageTk, Image
 import cv2 
 import pyautogui
 
+
+class TKUI(tk.Tk):
+    def __init__(self, use_grip_cmds, CP210x_only, no_input=False, reverse=False, camera_capture=0, fade_rate=20):
+        self.use_grip_cmds = use_grip_cmds
+        self.CP210x_only = CP210x_only
+        self.reverse = reverse
+        self.camera_capture = camera_capture
+        self.fade_rate = fade_rate
+        
+        self.label = tk.Label(self)
+
+        pass
+
 window = tk.Tk()
 window.attributes('-fullscreen', True)
-
+window.config(cursor="none")
 image_label = tk.Label(window)
 image_label.pack()
 
@@ -21,6 +34,7 @@ cap.set(cv2.CAP_PROP_FOURCC, fourcc)
 cap.set(cv2.CAP_PROP_FPS, 90)
 cap.set(cv2.CAP_PROP_FRAME_WIDTH, int(1920*720/1080))
 cap.set(cv2.CAP_PROP_FRAME_HEIGHT, int(1080*720/1080))
+
 
 if not cap.isOpened():
     raise RuntimeError("cap.isOpened() returned false")
@@ -52,7 +66,6 @@ def main_task():
     global cap
     global screen_saver_img_obj
     if show_webcam:
-        print("webcam showed!")
         success, frame = cap.read()
         opencv_image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGBA)
         captured_image = Image.fromarray(opencv_image).resize((dim[0], dim[1]))
@@ -66,7 +79,7 @@ def main_task():
             print("insert handwave here")
         else:
             print("hands would be still in this situation")
-    window.after(20, main_task)
+    window.after(10, main_task)
 
 
 # tk.Button(window, text="Quit", command=window.destroy).pack()
