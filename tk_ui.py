@@ -45,12 +45,15 @@ class TKUI(tk.Tk):
         self.bind('a', self.switch_img)
         self.bind('x', self.switch_handwave)
 
+        # webcam
         fourcc = cv2.VideoWriter_fourcc('M','J','P','G')
         self.cap = cv2.VideoCapture(0)
         self.cap.set(cv2.CAP_PROP_FOURCC, fourcc)
         self.cap.set(cv2.CAP_PROP_FPS, 90)
         self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, int(1920*720/1080))
         self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, int(1080*720/1080))
+
+
 
         if not self.cap.isOpened():
             print("WARNING: cap.isOpened() returned false in __init__()")
@@ -87,11 +90,34 @@ class TKUI(tk.Tk):
         
         # TODO: IR sensor input listeners 
 
+
+        # TODO: control initialization
+        self.fpos = [15., 15., 15., 15., 15., -15.]
+        self.send_unsampling_msg_ts = 0
+        self.lpf_fps_sos = signal.iirfilter(2, Wn=0.7, btype='lowpass', analog=False, ftype='butter', output='sos', fs=30)	#filter for the fps counter
+        self.prev_cmd_was_grip = [0,0]
+        self.warr_fps = [0,0,0]
+        self.abhlist = []
+        for i in range(self.n):
+            abh = AbilityHandBridge()
+            self.abhlist.append(abh)
+        
         if self.reverse:
             self.slist.reverse()
 
         fps = int(cap.get(5))
         print("fps: ", fps)
+
+        # mediapipe detection initialization
+        self.mp_drawing = mp.solutions.drawing_utils
+        self.mp_drawing_styles = mp.solutions.drawing_styles
+        self.mp_hands = mp.solutions.hands
+        self.hand_detector = self.mp_hands.Hands(max_num_hands=self.n,
+            model_complexity=0,
+            min_detection_confidence=0.33,
+            min_tracking_confidence=0.66)
+
+        self.tprev = cv2.getTickCount()
 
     def handwave(self, fpos):
         for serial in self.slist:
@@ -115,9 +141,11 @@ class TKUI(tk.Tk):
         if self.input_listener: # TODO: implement input listener part
             self.input_listener.close()
 
+        cv2.destroyAllWindows()
         self.destroy()
 
     def switch_img(self, e):
+        self.transition_count = 0
         self.show_webcam = not self.show_webcam
 
     def switch_handwave(self, e):
@@ -126,8 +154,118 @@ class TKUI(tk.Tk):
     # the function called in our mainloop
     def update(self):
         # here's what mainloop calls
-        pass
 
+        if self.input_listener:
+            # TODO: implement input listener
+            pass
+        
+        if show_webcam:
+            """
+            mediapipe hand detection
+            """
+            if self.cap.isOpened():
+                ts = cv2.getTickCount()
+                tdif = ts - self.tprev
+                self.tprev = ts
+                fps = cv2.getTickGrequency()/tdif
+                success, image = self.cap.read()
+
+                if not success:
+                    print("ignoring empty frame")
+                    return
+
+                image.flags.writeable = False
+                image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+                results = self.hand_detector.process(image)
+                image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB) # comment/uncomment if color output looks funny
+                
+                if results.multi_hand_landmarks:
+                    num_writes = 1
+                    if (len(results.multi_hand_landmarks) == 2 and results.multi_handedness[0].classification[0].index != results.multi_handedness[1].classification[0].index):
+                        num_writes = 2
+                    for idx in range(num_writes):
+                        t = time.time()
+                        ser_idx = results.multi_handedness[idx].classification[0].index
+                        if (self.n == 1):
+                            ser_idx = 0
+                        
+                        self.abhlist[idx].update(self.mp_hands, results.multi_hand_landmarks[idx].landmark, results.multi_handedness[idx].classification[0].index)
+                        
+                        if self.abhlist[idx].is_set_grip == 1 and (self.abhlist[idx].grip_word == 1 or self.abhlist[idx].grip_word == 3) and self.use_grip_cmds == 1:
+                            grip = 0x00
+                            if (self.abhlist[idx].grip_word == 1):
+                                grip = 0x3
+                            elif (self.abhlist[idx].grip_word == 3):
+                                grip = 0x4
+                            if (self.prev_cmd_was_grip[ser_idx] == 0):
+                                msg = send_grip_cmd(0x50, grip, 0xFF) 
+                                self.slist[ser_idx].wrie(msg)
+                                time.sleep(0.01)
+                                msg=send_grip_cmd(0x50, 0x00, 0xFF)
+                                self.slist[ser_idx].write(msg)
+                                time.sleep(0.01)
+                                self.prev_cmd_was_grip[ser_idx] = 1
+                            msg = send_grip_cmd(0x50, grip, 0xFF)
+
+                        else:
+                            self.prev_cmd_was_grip[idx] = 0
+                            # Write the finger array out over UART to the hand!
+                            msg = farr_to_barr(0x50, self.abhlist[idx].fpos)
+
+                        self.slist[ser_idx].write(msg)
+
+                        # draw landmarks of the hand we found
+                        hand_landmarks = results.multi_hand_landmarks[idx]
+                        self.mp_drawing.draw_landmarks(
+                            image,
+                            hand_landmarks,
+                            self.mp_hands.HAND_CONNECTIONS,
+                            self.mp_drawing_styles.get_default_hand_landmarks_style(),
+                            self.mp_drawing_styles.get_default_hand_connections_style()
+                        )
+
+                        # Render a static point in the base frame of the model. Visualization of the position-orientation accuracy.
+                        # Point should be just in front of the palm. Compensated for handedness
+                        static_point_b = np.array([4.16, 1.05, -1.47*self.abhlist[idx].handed_sign, 1])*self.abhlist[idx].scale
+                        static_point_b[3] = 1 # remove scaling that wasapplied to the immutable '1'
+                        neutral_thumb_w = self.abhlist[idx].hw_b.dot(static_point_b) # get dot position in world coordinates for a visual tag/reference
+                        l_list = landmark_pb2.NormalizedLandmarkList(
+                            landmark=[
+                                v4_to_landmark(neutral_thumb_w)
+                            ]
+                        )
+                        self.mp_drawing.draw_landmarks(
+                            image,
+                            l_list,
+                            [],
+                            self.mp_drawing_styles.get_default_hand_landmarks_style(),
+                            self.mp_drawing_styles.get_default_hand_landmarks_style()
+                        )
+
+                t_seconds = ts/cv2.getTickFrequency()
+                if (t_seconds > self.send_unsampling_msg_ts):
+                    self.send_unsampling_msg_ts = t_seconds + 10
+                    for i in range(self.n):
+                        msg = create_misc_msg(0x50, 0xC2)
+                        print("sending: ", [ hex(b) for b in msg ], "to ser device ", i)
+                        self.slist[i].write(msg)
+
+                fpsfilt, warr_fps = py_sos_iir(fps, warr_fps, self.lpf_fps_sos[0])
+                print(fpsfilt)
+                image = cv2.flip(image, 1)
+                imgresized = cv2.resize(image, (self.dim[0], self.dim[1]), interpolation=cv2.INTER_CUBIC)
+                if (self.transition_count < self.fade_rate):
+                    fadein = self.transition_count/float(self.fade_rate)
+                    imgresized = cv2.addWeighted(self.black_img, 1-fadein, imgresized, fadein, 0)
+                    self.transition_count += 1
+
+                tk_img = ImageTk.PhotoImage(image=Image.fromarray(imgresized))
+                self.label.photo_image = tk_img
+                self.label.config(image=tk_img)
+                
+        else:
+            if (self.wave_hand):
+                self.handwave(self.fpos)
 
 window = tk.Tk()
 window.attributes('-fullscreen', True)
@@ -201,5 +339,5 @@ def main_task():
 # canv.pack(fill=tk.BOTH, expand=True)
 # canv.create_image(0, 0, anchor=tk.NW, image=photo_img_obj)
 
-window.after(0, main_task)
+window.after(10, main_task)
 window.mainloop()
