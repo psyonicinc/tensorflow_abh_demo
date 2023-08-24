@@ -1,6 +1,6 @@
 import tkinter as tk
-from PIL import ImageTk, Image
 import cv2 
+from PIL import ImageTk, Image
 import pyautogui
 import mediapipe as mp
 import numpy as np
@@ -20,7 +20,7 @@ from vect_tools import *
 
 class TKUI(tk.Tk):
     def __init__(self, use_grip_cmds, CP210x_only, no_input=False, reverse=False, camera_capture=0, fade_rate=20):
-        super().__init__(self)
+        super().__init__()
         self.attributes('-fullscreen', True)
         self.config(cursor='none')
 
