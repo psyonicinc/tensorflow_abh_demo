@@ -7,7 +7,7 @@ import numpy as np
 import argparse
 import serial
 from serial.tools import list_ports
-
+import math
 # debug
 import traceback
 
@@ -37,12 +37,24 @@ class TKUI(tk.Tk):
 
         self.show_webcam = False
         self.wave_hand = True
+        self.transition_count = 100
 
+        # key bindings
         self.bind('q', self.close_window)
         self.bind('a', self.switch_img)
         self.bind('x', self.switch_handwave)
 
-        # Find all serial ports
+        fourcc = cv2.VideoWriter_fourcc('M','J','P','G')
+        self.cap = cv2.VideoCapture(0)
+        self.cap.set(cv2.CAP_PROP_FOURCC, fourcc)
+        self.cap.set(cv2.CAP_PROP_FPS, 90)
+        self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, int(1920*720/1080))
+        self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, int(1080*720/1080))
+
+        if not self.cap.isOpened():
+            print("WARNING: cap.isOpened() returned false in __init__()")
+
+        # Find all serial ports for self.slist
         self.slist = []
         com_ports_list = list(list_ports.comports())
         port = []
@@ -77,13 +89,26 @@ class TKUI(tk.Tk):
         if self.reverse:
             self.slist.reverse()
 
+        fps = int(cap.get(5))
+        print("fps: ", fps)
 
     def handwave(self, fpos):
-        pass
+        for serial in self.slist:
+            try:
+                for i in range(len(fpos)):
+                    ft = time.time()*1.25 + i*(2*np.pi)/12
+                    fpos[i] = (0.5*math.sin(ft)+0.5)
+                fpos[5] = -fpos[5]
+
+                msg = farr_to_barr(0x50, fpos)
+                serial.write(msg)
+            except:
+                pass
     
     # event handlers
     def close_window(self, e):
-        pass
+
+        self.destroy()
 
     def switch_img(self, e):
         pass
