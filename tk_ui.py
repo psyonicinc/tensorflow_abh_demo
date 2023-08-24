@@ -21,6 +21,9 @@ from vect_tools import *
 class TKUI(tk.Tk):
     def __init__(self, use_grip_cmds, CP210x_only, no_input=False, reverse=False, camera_capture=0, fade_rate=20):
         super().__init__(self)
+        self.attributes('-fullscreen', True)
+        self.config(cursor='none')
+
         self.use_grip_cmds: bool = use_grip_cmds
         self.CP210x_only: bool = CP210x_only
         self.no_input: bool = no_input
@@ -30,8 +33,9 @@ class TKUI(tk.Tk):
         self.input_listener = None # meant to be a serial object
 
         self.dim = pyautogui.size()
-        self.screen_saver = ImageTk.PhotoImage(Image.open("default_img.jpg").resize(self.dim[0], self.dim[1]))
-        self.black_img = np.zeros((dim[0], dim[1]))
+        self.screen_saver = cv2.imread("default_img.jpg")
+        self.screen_saver = cv2.resize(self.screen_saver, (self.dim[0], self.dim[1]))
+        self.black_img = np.zeros((self.dim[0], self.dim[1]))
 
         self.label = tk.Label(self)
         self.label.pack()
@@ -259,13 +263,27 @@ class TKUI(tk.Tk):
                     imgresized = cv2.addWeighted(self.black_img, 1-fadein, imgresized, fadein, 0)
                     self.transition_count += 1
 
-                tk_img = ImageTk.PhotoImage(image=Image.fromarray(imgresized))
-                self.label.photo_image = tk_img
-                self.label.config(image=tk_img)
-                
+
         else:
             if (self.wave_hand):
                 self.handwave(self.fpos)
+
+            image = self.screen_saver
+
+            if (self.transition_count < float(self.fade_rate) and cap.isOpened()):
+                _, webcam_img = self.cap.read()
+                webcam_img = cv2.flip(webcam_img, 1)
+                webcam_img = cv2.resize(webcam_img, (self.dim[0], self.dim[1]), interpolation=cv2.INTER_CUBIC)
+                fadein = self.transition_count/float(self.fade_rate)
+                imgresized = cv2.addWeighted(self.black_img, 1-fadein, self.screen_saver, fadein, 0)
+                self.transition_count += 1
+
+            else:
+                imgresized = image
+
+        tk_img = ImageTk.PhotoImage(image=Image.fromarray(imgresized))
+        self.label.photo_image = tk_img
+        self.label.config(image=tk_img)
 
 window = tk.Tk()
 window.attributes('-fullscreen', True)
