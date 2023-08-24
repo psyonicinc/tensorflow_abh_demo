@@ -88,7 +88,7 @@ class TKUI(tk.Tk):
         
         self.n = len(self.slist)
         if not (self.n > 0 and self.n <= 2): # if 0 < self.n <= 2 is false
-            raise RuntimeError("no serial ports connected")
+            raise RuntimeError("no serial ports connected. here's self.n: ", self.n)
         
         print("found ", len(self.slist), " ports" )
         
