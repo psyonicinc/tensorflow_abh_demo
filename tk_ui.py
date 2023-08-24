@@ -20,6 +20,7 @@ from vect_tools import *
 
 class TKUI(tk.Tk):
     def __init__(self, use_grip_cmds, CP210x_only, no_input=False, reverse=False, camera_capture=0, fade_rate=20):
+        super().__init__(self)
         self.use_grip_cmds: bool = use_grip_cmds
         self.CP210x_only: bool = CP210x_only
         self.no_input: bool = no_input
@@ -37,7 +38,7 @@ class TKUI(tk.Tk):
 
         self.show_webcam = False
         self.wave_hand = True
-        self.transition_count = 100
+        self.transition_count = 100 # when transitioning between screensaver and webcam
 
         # key bindings
         self.bind('q', self.close_window)
@@ -107,14 +108,20 @@ class TKUI(tk.Tk):
     
     # event handlers
     def close_window(self, e):
+        self.cap.release()
+        for s in self.slist:
+            s.close()
+        
+        if self.input_listener: # TODO: implement input listener part
+            self.input_listener.close()
 
         self.destroy()
 
     def switch_img(self, e):
-        pass
+        self.show_webcam = not self.show_webcam
 
     def switch_handwave(self, e):
-        pass
+        self.wave_hand = not self.wave_hand
 
     # the function called in our mainloop
     def update(self):
