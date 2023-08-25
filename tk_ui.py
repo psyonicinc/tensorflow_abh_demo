@@ -57,8 +57,6 @@ class TKUI(tk.Tk):
         self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, int(1920*720/1080))
         self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, int(1080*720/1080))
 
-
-
         if not self.cap.isOpened():
             print("WARNING: cap.isOpened() returned false in __init__()")
 
@@ -163,7 +161,7 @@ class TKUI(tk.Tk):
             # TODO: implement input listener
             pass
         
-        if show_webcam:
+        if self.show_webcam:
             """
             mediapipe hand detection
             """
@@ -263,9 +261,8 @@ class TKUI(tk.Tk):
                     imgresized = cv2.addWeighted(self.black_img, 1-fadein, imgresized, fadein, 0)
                     self.transition_count += 1
 
-
         else:
-            if (self.wave_hand):
+            if self.wave_hand:
                 self.handwave(self.fpos)
 
             image = self.screen_saver
