@@ -83,15 +83,23 @@ class TKUI(tk.Tk):
             except Exception:
                 print("Failed to connect. here's traceback: ")
                 print(traceback.format_exc)
-        
+
+        # TODO: IR sensor input listeners 
+        if not self.no_input:
+            start_time = time.time()
+            print("connecting input handler...")
+            while (time.time() - start_time < 5):
+                for i in range(len(self.slist)):
+                    if (self.slist[i].inWaiting() > 0):
+                        self.input_listener = self.slist.pop(i)
+                        start_time -= 40 # we're connected. let's not wait this long
+                        break
+
         self.n = len(self.slist)
         if not (self.n > 0 and self.n <= 2): # if 0 < self.n <= 2 is false. For 2 hands
             raise RuntimeError("no serial ports connected. here's self.n: ", self.n)
         
         print("found ", len(self.slist), " ports" )
-        
-        # TODO: IR sensor input listeners 
-
 
         # TODO: control initialization
         self.fpos = [15., 15., 15., 15., 15., -15.]
@@ -120,6 +128,7 @@ class TKUI(tk.Tk):
             min_tracking_confidence=0.66)
 
         self.tprev = cv2.getTickCount()
+        self.after(10, self.update)
 
     def handwave(self, fpos):
         for serial in self.slist:
