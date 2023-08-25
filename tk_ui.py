@@ -128,7 +128,7 @@ class TKUI(tk.Tk):
             min_tracking_confidence=0.66)
 
         self.tprev = cv2.getTickCount()
-        self.after(10, self.update)
+        
 
     def handwave(self, fpos):
         for serial in self.slist:
@@ -156,6 +156,7 @@ class TKUI(tk.Tk):
         self.destroy()
 
     def switch_img(self, e):
+        print("image switch")
         self.transition_count = 0
         self.show_webcam = not self.show_webcam
 
@@ -178,7 +179,7 @@ class TKUI(tk.Tk):
                 ts = cv2.getTickCount()
                 tdif = ts - self.tprev
                 self.tprev = ts
-                fps = cv2.getTickGrequency()/tdif
+                fps = cv2.getTickFrequency()/tdif
                 success, image = self.cap.read()
 
                 if not success:
@@ -261,7 +262,7 @@ class TKUI(tk.Tk):
                         print("sending: ", [ hex(b) for b in msg ], "to ser device ", i)
                         self.slist[i].write(msg)
 
-                fpsfilt, warr_fps = py_sos_iir(fps, warr_fps, self.lpf_fps_sos[0])
+                fpsfilt, self.warr_fps = py_sos_iir(fps, self.warr_fps, self.lpf_fps_sos[0])
                 print(fpsfilt)
                 image = cv2.flip(image, 1)
                 imgresized = cv2.resize(image, (self.dim[0], self.dim[1]), interpolation=cv2.INTER_CUBIC)
@@ -290,6 +291,8 @@ class TKUI(tk.Tk):
         tk_img = ImageTk.PhotoImage(image=Image.fromarray(imgresized))
         self.label.photo_image = tk_img
         self.label.config(image=tk_img)
+
+        self.after(10, self.update)
 
 
 if __name__ == "__main__":
