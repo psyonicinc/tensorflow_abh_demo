@@ -85,7 +85,7 @@ class TKUI(tk.Tk):
                 print(traceback.format_exc)
         
         self.n = len(self.slist)
-        if not (self.n > 0 and self.n <= 2): # if 0 < self.n <= 2 is false
+        if not (self.n > 0 and self.n <= 2): # if 0 < self.n <= 2 is false. For 2 hands
             raise RuntimeError("no serial ports connected. here's self.n: ", self.n)
         
         print("found ", len(self.slist), " ports" )
@@ -107,7 +107,7 @@ class TKUI(tk.Tk):
         if self.reverse:
             self.slist.reverse()
 
-        fps = int(cap.get(5))
+        fps = int(self.cap.get(5))
         print("fps: ", fps)
 
         # mediapipe detection initialization
