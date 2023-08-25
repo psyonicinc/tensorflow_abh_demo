@@ -35,7 +35,7 @@ class TKUI(tk.Tk):
         self.dim = pyautogui.size()
         self.screen_saver = cv2.imread("default_img.jpg")
         self.screen_saver = cv2.resize(self.screen_saver, (self.dim[0], self.dim[1]))
-        self.black_img = np.zeros((self.dim[0], self.dim[1]))
+        self.black_img = np.zeros_like(self.screen_saver)
 
         self.label = tk.Label(self)
         self.label.pack()
