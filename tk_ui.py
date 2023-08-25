@@ -128,7 +128,7 @@ class TKUI(tk.Tk):
             min_tracking_confidence=0.66)
 
         self.tprev = cv2.getTickCount()
-        
+        self.updater()
 
     def handwave(self, fpos):
         for serial in self.slist:
@@ -292,7 +292,9 @@ class TKUI(tk.Tk):
         self.label.photo_image = tk_img
         self.label.config(image=tk_img)
 
-        self.after(10, self.update)
+    def updater(self):
+        self.update()
+        self.after(10, self.updater)
 
 
 if __name__ == "__main__":
