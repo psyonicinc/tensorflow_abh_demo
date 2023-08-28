@@ -93,6 +93,7 @@ class TKUI(tk.Tk):
                     if (self.slist[i].inWaiting() > 0):
                         self.input_listener = self.slist.pop(i)
                         start_time -= 40 # we're connected. let's not wait this long
+                        print("input handler connected!")
                         break
 
         self.n = len(self.slist)
@@ -169,8 +170,21 @@ class TKUI(tk.Tk):
         # here's what mainloop calls
 
         if self.input_listener:
-            # TODO: implement input listener
-            pass
+            data_char = set(self.input_listener.read(self.input_listener.inWaiting()).decode('ascii')) # get our input
+
+            if 'A' in data_char:
+                self.show_webcam = True
+                self.transition_count = 0
+
+            elif 'X' in data_char:
+                self.show_webcam = False
+                self.transition_count = 0
+
+            elif 'Y' in data_char and not self.show_webcam:
+                self.wave_hand = not self.wave_hand
+
+            elif 'U' in data_char and not self.show_webcam:
+                self.wave_hand = not self.wave_hand
         
         if self.show_webcam:
             """
