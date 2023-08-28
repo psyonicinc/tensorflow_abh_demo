@@ -171,6 +171,7 @@ class TKUI(tk.Tk):
 
         if self.input_listener:
             data_char = set(self.input_listener.read(self.input_listener.inWaiting()).decode('ascii')) # get our input
+            print("here's data char: ", data_char)
 
             if 'A' in data_char:
                 self.show_webcam = True
@@ -323,5 +324,4 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     app = TKUI(use_grip_cmds=args.do_grip_cmds, CP210x_only=args.CP210x_only, no_input=args.no_input, reverse=args.reverse, camera_capture=args.camera_capture, fade_rate=args.fade_rate)
-    app.after(10, app.updater)
     app.mainloop()
