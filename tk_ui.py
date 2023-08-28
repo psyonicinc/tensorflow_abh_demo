@@ -130,13 +130,13 @@ class TKUI(tk.Tk):
         self.tprev = cv2.getTickCount()
         self.updater()
 
-    def handwave(self, fpos):
+    def handwave(self):
         for serial in self.slist:
             try:
-                for i in range(len(fpos)):
+                for i in range(len(self.fpos)):
                     ft = time.time()*1.25 + i*(2*np.pi)/12
-                    fpos[i] = (0.5*math.sin(ft)+0.5)
-                fpos[5] = -fpos[5]
+                    self.fpos[i] = (0.5*math.sin(ft)+0.5)
+                self.fpos[5] = -self.fpos[5]
 
                 msg = farr_to_barr(0x50, fpos)
                 serial.write(msg)
@@ -273,7 +273,7 @@ class TKUI(tk.Tk):
 
         else:
             if self.wave_hand:
-                self.handwave(self.fpos)
+                self.handwave()
 
             image = self.screen_saver
 
