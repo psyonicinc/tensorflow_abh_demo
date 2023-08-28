@@ -174,8 +174,7 @@ class SerialDisplayer:
                 if self.input_listener:
                     #data_char = self.input_listener.read(self.input_listener.inWaiting())
                     data_char = set(self.input_listener.read(self.input_listener.inWaiting()).decode('ascii')) # get our input
-                    print("here's data_char: ", data_char)
-
+                    
                     if 'A' in data_char:
                         show_webcam = True
                         transition_count = 0

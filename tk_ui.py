@@ -135,12 +135,13 @@ class TKUI(tk.Tk):
             try:
                 for i in range(len(self.fpos)):
                     ft = time.time()*1.25 + i*(2*np.pi)/12
-                    self.fpos[i] = (0.5*math.sin(ft)+0.5)
+                    self.fpos[i] = (0.5*math.sin(ft)+0.5)*45 + 15
                 self.fpos[5] = -self.fpos[5]
 
-                msg = farr_to_barr(0x50, fpos)
+                msg = farr_to_barr(0x50, self.fpos)
                 serial.write(msg)
             except:
+                print("in except statement")
                 pass
     
     # event handlers
