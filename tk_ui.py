@@ -33,8 +33,9 @@ class TKUI(tk.Tk):
         self.input_listener = None # meant to be a serial object
 
         self.dim = pyautogui.size()
-        self.screen_saver = cv2.imread("default_img.jpg")
+        self.screen_saver = cv2.imread("default_img.jpg", cv2.IMREAD_COLOR)
         self.screen_saver = cv2.resize(self.screen_saver, (self.dim[0], self.dim[1]))
+        self.screen_saver = cv2.cvtColor(self.screen_saver, cv2.COLOR_BGR2RGB)
         self.black_img = np.zeros_like(self.screen_saver)
 
         self.label = tk.Label(self)
@@ -205,7 +206,7 @@ class TKUI(tk.Tk):
                 image.flags.writeable = False
                 image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
                 results = self.hand_detector.process(image)
-                image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB) # comment/uncomment if color output looks funny
+                #image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB) # comment/uncomment if color output looks funny
                 
                 if results.multi_hand_landmarks:
                     num_writes = 1
