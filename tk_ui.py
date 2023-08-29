@@ -83,7 +83,7 @@ class TKUI(tk.Tk):
                     self.slist.append(ser)
                     print("connected!", p)
 
-                # TODO: IR sensor input listeners 
+                # IR sensor input listeners 
                 elif not self.no_input and ( (not self.CP210x_only) or (self.CP210x_only == True and (p[1].find('CP210') != -1) ) ):
                     print("connecting input handler...")
                     self.input_listener = (serial.Serial(p[0], '460800', timeout=1))
@@ -100,7 +100,7 @@ class TKUI(tk.Tk):
         
         print("found ", len(self.slist), " ports" )
 
-        # TODO: control initialization
+        # control initialization
         self.fpos = [15., 15., 15., 15., 15., -15.]
         self.send_unsampling_msg_ts = 0
         self.lpf_fps_sos = signal.iirfilter(2, Wn=0.7, btype='lowpass', analog=False, ftype='butter', output='sos', fs=30)	#filter for the fps counter
@@ -149,7 +149,7 @@ class TKUI(tk.Tk):
         for s in self.slist:
             s.close()
         
-        if self.input_listener: # TODO: implement input listener part
+        if self.input_listener: # implement input listener part
             self.input_listener.close()
 
         cv2.destroyAllWindows()

@@ -78,7 +78,7 @@ class SerialDisplayer:
 
             except Exception:
                 print("Failed to connect. here's traceback: ")
-                print(traceback.format_exc)
+                print(traceback.format_exc())
 
         print("found ", len(self.slist), " ports")
 
@@ -341,8 +341,8 @@ class SerialDisplayer:
         if self.input_listener:
             self.input_listener.close()
 
-    cv2.destroyAllWindows()
-    #os.system("killall -9 unclutter")
+        cv2.destroyAllWindows()
+        #os.system("killall -9 unclutter")
 
 if __name__=="__main__":
     parser = argparse.ArgumentParser(description='Hand CV Demo Parser')
