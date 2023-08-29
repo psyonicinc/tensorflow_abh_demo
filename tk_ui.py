@@ -8,6 +8,7 @@ import argparse
 import serial
 from serial.tools import list_ports
 import math
+import time
 # debug
 import traceback
 
@@ -77,7 +78,7 @@ class TKUI(tk.Tk):
         for p in port:
             try:
                 ser = []
-                if ( (not self.CP210x_only) or  (self.CP210x_only == True and ( (p[1].find('CP210') != -1) or (p[1].find('FT232R') != -1) )) ):
+                if ( (not self.CP210x_only) or (self.CP210x_only == True and (p[1].find('FT232R') != -1)) ):
                     ser = (serial.Serial(p[0], '460800', timeout=1))
                     self.slist.append(ser)
                     print("connected!", p)
@@ -86,7 +87,7 @@ class TKUI(tk.Tk):
                 print(traceback.format_exc)
 
         # TODO: IR sensor input listeners 
-        if not self.no_input:
+        if not self.no_input and ( (not self.CP210x_only) or (self.CP210x_only == True and (p[1].find('CP210') != -1) ) ):
             start_time = time.time()
             print("connecting input handler...")
             while (time.time() - start_time < 5):

@@ -77,7 +77,7 @@ class SerialDisplayer:
 
         print("found ", len(self.slist), " ports")
 
-        if not self.no_input: # input checking argument if statement
+        if not self.no_input and ( (not self.CP210x_only) or  (self.CP210x_only == True and (p[1].find('CP210') != -1) ) ): # input checking argument if statement
             start_time = time.time()
             print("connecting input handler...")
             while(time.time() - start_time < 5):
