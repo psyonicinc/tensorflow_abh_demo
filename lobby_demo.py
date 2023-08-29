@@ -66,26 +66,21 @@ class SerialDisplayer:
         for p in port:
             try:
                 ser = []
-                if( (not self.CP210x_only) or  (self.CP210x_only == True and ( (p[1].find('CP210') != -1) or (p[1].find('FT232R') != -1) )) ):
-                    ser = (serial.Serial(p[0],'460800', timeout = 1))
+                if ( (not self.CP210x_only) or (self.CP210x_only == True and (p[1].find('FT232R') != -1)) ):
+                    ser = (serial.Serial(p[0], '460800', timeout=1))
                     self.slist.append(ser)
-                    print ("connected!", p)
+                    print("connected!", p)
+
+                # TODO: IR sensor input listeners 
+                elif not self.no_input and ( (not self.CP210x_only) or (self.CP210x_only == True and (p[1].find('CP210') != -1) ) ):
+                    print("connecting input handler...")
+                    self.input_listener = (serial.Serial(p[0], '460800', timeout=1))
 
             except Exception:
                 print("Failed to connect. here's traceback: ")
-                print(traceback.format_exc())
+                print(traceback.format_exc)
 
         print("found ", len(self.slist), " ports")
-
-        if not self.no_input and ( (not self.CP210x_only) or  (self.CP210x_only == True and (p[1].find('CP210') != -1) ) ): # input checking argument if statement
-            start_time = time.time()
-            print("connecting input handler...")
-            while(time.time() - start_time < 5):
-                for i in range(len(self.slist)):
-                    if (self.slist[i].inWaiting() > 0):
-                        self.input_listener = self.slist.pop(i)
-                        start_time -= 40 # we're connected. let's not wait this long
-                        break
 
         if not (len(self.slist) > 0 and len(self.slist) <= 2): # check number of available hands
             raise RuntimeError("no serial ports connected")

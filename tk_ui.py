@@ -82,21 +82,17 @@ class TKUI(tk.Tk):
                     ser = (serial.Serial(p[0], '460800', timeout=1))
                     self.slist.append(ser)
                     print("connected!", p)
+
+                # TODO: IR sensor input listeners 
+                elif not self.no_input and ( (not self.CP210x_only) or (self.CP210x_only == True and (p[1].find('CP210') != -1) ) ):
+                    print("connecting input handler...")
+                    self.input_listener = (serial.Serial(p[0], '460800', timeout=1))
+
             except Exception:
                 print("Failed to connect. here's traceback: ")
                 print(traceback.format_exc)
 
-        # TODO: IR sensor input listeners 
-        if not self.no_input and ( (not self.CP210x_only) or (self.CP210x_only == True and (p[1].find('CP210') != -1) ) ):
-            start_time = time.time()
-            print("connecting input handler...")
-            while (time.time() - start_time < 5):
-                for i in range(len(self.slist)):
-                    if (self.slist[i].inWaiting() > 0):
-                        self.input_listener = self.slist.pop(i)
-                        start_time -= 40 # we're connected. let's not wait this long
-                        print("input handler connected!")
-                        break
+
 
         self.n = len(self.slist)
         if not (self.n > 0 and self.n <= 2): # if 0 < self.n <= 2 is false. For 2 hands
