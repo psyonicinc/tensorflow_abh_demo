@@ -71,10 +71,10 @@ class SerialDisplayer:
                     self.slist.append(ser)
                     print("connected!", p)
 
-                # TODO: IR sensor input listeners 
+                # IR sensor input listener 
                 elif not self.no_input and ( (not self.CP210x_only) or (self.CP210x_only == True and (p[1].find('CP210') != -1) ) ):
                     print("connecting input handler...")
-                    self.input_listener = (serial.Serial(p[0], '460800', timeout=1))
+                    self.input_listener = (serial.Serial(p[0], '500000', timeout=1))
 
             except Exception:
                 print("Failed to connect. here's traceback: ")
@@ -91,10 +91,6 @@ class SerialDisplayer:
         if not self.input_listener:
             print("warning: no input handler found")
             # raise RuntimeError("No switch found. Cannot launch program")
-        else:
-            ir_port = self.input_listener.port
-            self.input_listener.close()
-            self.input_listener = serial.Serial(ir_port,'500000', timeout=1)
 
         for s in self.slist:
             buf = create_misc_msg(0x50, 0xC2)

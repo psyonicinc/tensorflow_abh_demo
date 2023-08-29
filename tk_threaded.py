@@ -86,10 +86,10 @@ class TKThreaded(tk.Tk):
                     self.slist.append(ser)
                     print("connected!", p)
 
-                # TODO: IR sensor input listeners 
+                # IR sensor input listeners 
                 elif not self.no_input and ( (not self.CP210x_only) or (self.CP210x_only == True and (p[1].find('CP210') != -1) ) ):
                     print("connecting input handler...")
-                    self.input_listener = (serial.Serial(p[0], '460800', timeout=1))
+                    self.input_listener = (serial.Serial(p[0], '500000', timeout=1))
 
             except Exception:
                 print("Failed to connect. here's traceback: ")
@@ -106,10 +106,6 @@ class TKThreaded(tk.Tk):
         if not self.input_listener:
             print("warning: no input handler found")
             # raise RuntimeError("No switch found. Cannot launch program")
-        else:
-            ir_port = self.input_listener.port
-            self.input_listener.close()
-            self.input_listener = serial.Serial(ir_port,'500000', timeout=1)
 
         for s in self.slist:
             buf = create_misc_msg(0x50, 0xC2)
@@ -136,18 +132,29 @@ class TKThreaded(tk.Tk):
                 pass
 
     def switch_img(self, e):
-        self.wave_hand = not self.wave_hand
-
-    def switch_handwave(self, e):
         print("image switch")
+        self.show_webcam = not self.show_webcam
         self.transition_count = 0
 
+
+    def switch_handwave(self, e):
+        self.wave_hand = not self.wave_hand
+
     def close(self, e):
-        # TODO: put all the closing stuff (serial ports, cv windows, threads etc.) here
+        # TODO: put all the closing stuff (threads, webcam, serial ports, cv windows,  etc.) here
         self.thread_is_on = False
         self.cam_thread.join()
+        
         self.cap.release()
-        self.destroy
+
+        for s in self.slist:
+            s.close()
+        
+        if self.input_listener:
+            self.input_listener.close()
+
+        cv2.destroyAllWindows()
+        self.destroy()
 
 
     def run(self):
@@ -159,7 +166,7 @@ class TKThreaded(tk.Tk):
         mp_drawing_styles = mp.solutions.drawing_styles
         mp_hands = mp.solutions.hands
 
-        fps = int(cap.get(5))
+        fps = int(self.cap.get(5))
         print("fps: ", fps)
         
         with mp_hands.Hands(
@@ -189,20 +196,20 @@ class TKThreaded(tk.Tk):
                     data_char = set(self.input_listener.read(self.input_listener.inWaiting()).decode('ascii')) # get our input
                     
                     if 'A' in data_char:
-                        show_webcam = True
-                        transition_count = 0
+                        self.show_webcam = True
+                        self.transition_count = 0
 
                     elif 'X' in data_char:
-                        show_webcam = False
-                        transition_count = 0
+                        self.show_webcam = False
+                        self.transition_count = 0
 
-                    elif 'Y' in data_char and not show_webcam:
+                    elif 'Y' in data_char and not self.show_webcam:
                         self.wave_hand = not self.wave_hand
 
-                    elif 'U' in data_char and not show_webcam:
+                    elif 'U' in data_char and not self.show_webcam:
                         self.wave_hand = not self.wave_hand
 
-                if show_webcam:
+                if self.show_webcam:
                     """
                     mediapipe hand detection
                     """
@@ -211,7 +218,7 @@ class TKThreaded(tk.Tk):
                         tdif = ts - tprev
                         tprev = ts
                         fps = cv2.getTickFrequency()/tdif
-                        success, image = cap.read()
+                        success, image = self.cap.read()
                         #print("webcam image shape: ", image.shape)
 
                         if not success:
@@ -297,10 +304,10 @@ class TKThreaded(tk.Tk):
                         print(fpsfilt)
                         image = cv2.flip(image, 1)
                         imgresized = cv2.resize(image, (self.dim[0], self.dim[1]), interpolation=cv2.INTER_CUBIC)
-                        if (transition_count < self.fade_rate):
-                            fadein = transition_count/float(self.fade_rate)
+                        if (self.transition_count < self.fade_rate):
+                            fadein = self.transition_count/float(self.fade_rate)
                             imgresized = cv2.addWeighted(self.black_img, 1-fadein, imgresized, fadein, 0)
-                            transition_count += 1
+                            self.transition_count += 1
          
                 else:
                     if (self.wave_hand):
@@ -308,26 +315,19 @@ class TKThreaded(tk.Tk):
 
                     image = self.screen_saver
 
-                    if (transition_count < float(self.fade_rate) and cap.isOpened()):
-                        _, webcam_img = cap.read()
+                    if (self.transition_count < float(self.fade_rate) and self.cap.isOpened()):
+                        _, webcam_img = self.cap.read()
                         webcam_img = cv2.flip(webcam_img, 1)
                         webcam_img = cv2.resize(webcam_img, (self.dim[0], self.dim[1]), interpolation=cv2.INTER_CUBIC)
-                        fadein = transition_count/float(self.fade_rate)
+                        fadein = self.transition_count/float(self.fade_rate)
                         imgresized = cv2.addWeighted(self.black_img, 1-fadein, self.screen_saver, fadein, 0)
-                        transition_count += 1
+                        self.transition_count += 1
                     else:
                         imgresized = image
-
-
-        self.cap.release()
-        for s in self.slist:
-            s.close()
-        
-        if self.input_listener:
-            self.input_listener.close()
-
-        cv2.destroyAllWindows()
-        pass
+                
+                tk_img = ImageTk.PhotoImage(iamge=Image.fromarray(imgresized))
+                self.label.photo_image = tk_img
+                self.label.config(image=tk_img)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Hand CV Demo Parser')

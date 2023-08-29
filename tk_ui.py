@@ -86,13 +86,15 @@ class TKUI(tk.Tk):
                 # IR sensor input listeners 
                 elif not self.no_input and ( (not self.CP210x_only) or (self.CP210x_only == True and (p[1].find('CP210') != -1) ) ):
                     print("connecting input handler...")
-                    self.input_listener = (serial.Serial(p[0], '460800', timeout=1))
+                    self.input_listener = (serial.Serial(p[0], '500000', timeout=1))
 
             except Exception:
                 print("Failed to connect. here's traceback: ")
                 print(traceback.format_exc)
 
-
+        if not self.input_listener:
+            print("warning: no input handler found")
+            # raise RuntimeError("No switch found. Cannot launch program")
 
         self.n = len(self.slist)
         if not (self.n > 0 and self.n <= 2): # if 0 < self.n <= 2 is false. For 2 hands
