@@ -202,7 +202,16 @@ if __name__ == "__main__":
 							mp_drawing_styles.get_default_hand_landmarks_style(),
 							mp_drawing_styles.get_default_hand_connections_style())
 				
-					
+						t_seconds = ts/cv2.getTickFrequency()
+						if(t_seconds > send_upsampling_msg_ts):
+							send_upsampling_msg_ts = t_seconds + 10
+							for i in range(0,n):
+								msg = create_misc_msg(0x50, 0xC2)
+								print("sending: ", [ hex(b) for b in msg ], "to ser device ", i)
+								slist[i].write(msg)
+
+
+
 				# Flip the image horizontally for a selfie-view display.
 				cv2.namedWindow('MediaPipe Hands', cv2.WINDOW_FREERATIO)
 				cv2.setWindowProperty('MediaPipe Hands',  cv2.WND_PROP_ASPECT_RATIO, cv2.WINDOW_FREERATIO)
@@ -210,15 +219,7 @@ if __name__ == "__main__":
 
 				if cv2.waitKey(1) & 0xFF == 27:
 					break
-				
-				t_seconds = ts/cv2.getTickFrequency()
-				if(t_seconds > send_upsampling_msg_ts):
-					send_upsampling_msg_ts = t_seconds + 10
-					for i in range(0,n):
-						msg = create_misc_msg(0x50, 0xC2)
-						print("sending: ", [ hex(b) for b in msg ], "to ser device ", i)
-						slist[i].write(msg)
-				
+								
 				
 				fpsfilt, warr_fps = py_sos_iir(fps, warr_fps, lpf_fps_sos[0])
 				print (fpsfilt)
