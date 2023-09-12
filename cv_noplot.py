@@ -20,6 +20,8 @@ if __name__ == "__main__":
 	parser.add_argument('--do_grip_cmds' , help="Include flag for using grip commands for grip recognitions", action='store_true')
 	parser.add_argument('--CP210x_only', help="for aadeel's bad computer", action='store_true')
 	parser.add_argument('--camera_capture', type=int, help="opencv capture number", default=0)
+	parser.add_argument('--flip_hands', help="set for flipping hands", action='store_true')
+	parser.add_argument('--show_fps', help="set to print obtained fps to stdout",action='store_true')
 	args = parser.parse_args()
 	
 	use_grip_cmds = args.do_grip_cmds
@@ -110,6 +112,7 @@ if __name__ == "__main__":
 				abh = AbilityHandBridge()
 				abhlist.append(abh)
 
+			flip_hands = args.flip_hands
 			send_upsampling_msg_ts = 0
 			while cap.isOpened():
 			
@@ -146,7 +149,10 @@ if __name__ == "__main__":
 					for idx in range(0 , num_writes):
 						#log time for plotting
 						t = time.time()
-						ser_idx = results.multi_handedness[idx].classification[0].index
+						if(flip_hands == False):
+							ser_idx = results.multi_handedness[idx].classification[0].index
+						else:
+							ser_idx = num_writes - (idx + 1) #reverse the serial to hands order
 						if(n == 1):
 							ser_idx = 0		#default to 0 if there's only one device connected
 						
@@ -217,12 +223,16 @@ if __name__ == "__main__":
 				cv2.setWindowProperty('MediaPipe Hands',  cv2.WND_PROP_ASPECT_RATIO, cv2.WINDOW_FREERATIO)
 				cv2.imshow('MediaPipe Hands', cv2.flip(image, 1))
 
-				if cv2.waitKey(1) & 0xFF == 27:
+				key = cv2.waitKey(1)
+				if key & 0xFF == 27:
 					break
-								
-				
-				fpsfilt, warr_fps = py_sos_iir(fps, warr_fps, lpf_fps_sos[0])
-				print (fpsfilt)
+				elif key & 0xFF == 102:	#f
+					flip_hands = (not flip_hands)
+					print("flip status: "+str(flip_hands))
+
+				if(args.show_fps == True):
+					fpsfilt, warr_fps = py_sos_iir(fps, warr_fps, lpf_fps_sos[0])
+					print (fpsfilt)
 
 		cap.release()
 		for s in slist:
