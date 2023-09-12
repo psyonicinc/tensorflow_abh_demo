@@ -149,13 +149,11 @@ if __name__ == "__main__":
 					for idx in range(0 , num_writes):
 						#log time for plotting
 						t = time.time()
-						if(flip_hands == False):
-							ser_idx = results.multi_handedness[idx].classification[0].index
-						else:
-							ser_idx = num_writes - (idx + 1) #reverse the serial to hands order
+						ser_idx = results.multi_handedness[idx].classification[0].index
 						if(n == 1):
 							ser_idx = 0		#default to 0 if there's only one device connected
-						
+
+
 						#fpos, warr, hw_b, hb_w, handed_sign, scale, dist_to_thumb = get_fpos(results, mp_hands, fpos, warr)
 						abhlist[idx].update(mp_hands, results.multi_hand_landmarks[idx].landmark, results.multi_handedness[idx].classification[0].index)
 						#if port:
@@ -228,6 +226,10 @@ if __name__ == "__main__":
 					break
 				elif key & 0xFF == 102:	#f
 					flip_hands = (not flip_hands)
+					if (n == 2):
+						tmp = slist[0]
+						slist[0] = slist[1]
+						slist[1] = tmp
 					print("flip status: "+str(flip_hands))
 
 				if(args.show_fps == True):
