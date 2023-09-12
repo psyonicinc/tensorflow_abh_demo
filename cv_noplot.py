@@ -112,7 +112,13 @@ if __name__ == "__main__":
 				abh = AbilityHandBridge()
 				abhlist.append(abh)
 
-			flip_hands = args.flip_hands
+			flip_hands = False
+			if(args.flip_hands == True):
+				tmp = slist[0]
+				slist[0] = slist[1]
+				slist[1] = tmp
+				flip_hands = True
+			
 			send_upsampling_msg_ts = 0
 			while cap.isOpened():
 			
