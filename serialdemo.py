@@ -5,7 +5,7 @@ import math
 import time
 import numpy as np
 from PPP_stuffing import *
-
+import binascii
 
 #ser = serial.Serial('COM4','460800', timeout = 1)
 """ 
@@ -44,31 +44,43 @@ for s in slist:
 
 fpos = [15., 15., 15., 15., 15., -15.]																									
 try:
+	rPos = np.array([])
+	rI = np.array([])
+	rV = np.array([])
+	rFSR = np.array([])
+	
+	stuff_buffer = np.array([])
 	while 1:
 		
-		try:
-			for i in range(0, len(fpos)):
-				ft = time.time()*3 + i*(2*np.pi)/12
-				fpos[i] = (.5*math.sin(ft)+.5)*45+15
-			fpos[5] = -fpos[5]
-			
-			msg = farr_to_barr(0x50, fpos)
-			slist[0].write(msg)
-		except:
-			pass
 		
-		try:		
-			for i in range(0, len(fpos)):
-				ft = time.time()*3 + (i+6)*(2*np.pi)/12
-				fpos[i] = (.5*math.sin(ft)+.5)*45+15
-			fpos[5] = -fpos[5]
-			
-			msg = farr_to_barr(0x50, fpos)
-			slist[1].write(msg)
-		except:
-			pass
+		for i in range(0, len(fpos)):
+			ft = time.time()*3 + i*(2*np.pi)/12
+			fpos[i] = (.5*math.sin(ft)+.5)*45+15
+		fpos[5] = -fpos[5]
+		
+		msg = farr_to_dposition(0x50, fpos, 1)
+		slist[0].write(msg)
+		
+		# for this application, block until there are bytes available. remove in these two lines in applications which are compute-heavy, such as abh demo
+		# while(slist[0].in_waiting == 0):
+			# pass
 	
 		time.sleep(.001)
+		
+		
+		while(slist[0].in_waiting != 0):	#dump all the data
+			bytes = slist[0].read(1024)	#gigantic read size with nonblocking
+			if(len(bytes) != 0): #redundant, but fine to keep
+				npbytes = np.frombuffer(bytes, np.uint8)
+				for b in npbytes:
+					payload, stuff_buffer = unstuff_PPP_stream(b,stuff_buffer)
+					if(len(payload) != 0):
+						rPos,rI,rV,rFSR = parse_hand_data(payload)
+						print(str(np.int16(rPos))+str(rI)+str(np.int16(rV))+str(rFSR))
+						#Optional: Dump any remaining data
+						# while(slist[0].in_waiting != 0):	
+							# bytes = slist[0].read(1024)
+
 		
 		
 except KeyboardInterrupt:

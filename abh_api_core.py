@@ -141,7 +141,7 @@ data in specified units
 """
 def parse_hand_data(buffer):
 
-	positions = np.zeros(6)
+	positions = np.array([])
 	current = np.array([])
 	velocity = np.array([])
 	fsrs = np.array([])
@@ -160,15 +160,16 @@ def parse_hand_data(buffer):
 		if(buf.size != 72):
 			return positions, current, velocity, fsrs
 	
-	#validate checksum
+	# validate checksum
 	bufsigned = np.int8(buf[0:buf.size-1])
-	chk = np.uint8(np.sum(bufsigned))
+	chk = np.uint8(-np.sum(bufsigned))
 	if(chk != buf[buf.size-1]):	
 		return positions, current, velocity, fsrs
 			
 	#checksum and size is correct, so proceed to parsing!
 	if(reply_variant == 1 or reply_variant == 2):
 		bidx = 1
+		positions = np.zeros(6)
 		for ch in range(0,6):
 			val = bytes(buf[bidx:bidx+2])
 			unpacked = struct.unpack('<h', val)[0]
