@@ -4,6 +4,8 @@ from abh_api_core import *
 import math
 import time
 import numpy as np
+from PPP_stuffing import *
+
 
 #ser = serial.Serial('COM4','460800', timeout = 1)
 """ 
@@ -24,7 +26,7 @@ if not port:
 for p in port:
 	try:
 		ser = []
-		ser = (serial.Serial(p[0],'460800', timeout = 1))
+		ser = (serial.Serial(p[0],'460800', timeout = 0))
 		slist.append(ser)
 		print ("connected!", p)
 		# print ("found: ", p)
