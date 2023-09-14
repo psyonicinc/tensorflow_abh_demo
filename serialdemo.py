@@ -60,13 +60,8 @@ try:
 		
 		msg = farr_to_dposition(0x50, fpos, 1)
 		slist[0].write(msg)
-		
-		# for this application, block until there are bytes available. remove in these two lines in applications which are compute-heavy, such as abh demo
-		# while(slist[0].in_waiting == 0):
-			# pass
-	
-		time.sleep(.001)
-		
+
+		time.sleep(.001)	#this is necessary because the hand needs IDLE time before issuing a reply
 		
 		while(slist[0].in_waiting != 0):	#dump all the data
 			bytes = slist[0].read(1024)	#gigantic read size with nonblocking
@@ -77,6 +72,9 @@ try:
 					if(len(payload) != 0):
 						rPos,rI,rV,rFSR = parse_hand_data(payload)
 						print(str(np.int16(rPos))+str(rI)+str(np.int16(rV))+str(rFSR))
+
+						if( (rPos.size + rI.size + rV.size + rFSR.size) == 0):
+							print("got a bad one")							
 						#Optional: Dump any remaining data
 						# while(slist[0].in_waiting != 0):	
 							# bytes = slist[0].read(1024)
