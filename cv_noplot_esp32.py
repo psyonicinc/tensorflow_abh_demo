@@ -23,6 +23,7 @@ if __name__ == "__main__":
 	parser.add_argument('--camera_capture', type=int, help="opencv capture number", default=0)
 	parser.add_argument('--no_pinch_lock', help="disallow the grip/pinch locking", action='store_true')
 	parser.add_argument('--no_filter', help="remove lpf for raw", action='store_true')
+	parser.add_argument('--no_hose',help="refrain from sending hose activation command",action='store_true')
 	args = parser.parse_args()
 	
 	use_grip_cmds = args.do_grip_cmds
@@ -38,9 +39,12 @@ if __name__ == "__main__":
 	client_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 	client_socket.settimeout(0)
 
-	hose_on_cmd = "activate_hose"
-	print("sending command: "+hose_on_cmd+" to: "+str(addr))
-	client_socket.sendto(bytearray(hose_on_cmd,encoding="utf8"),udp_server_addr)
+	if(args.no_hose == False):
+		#note: if PPP stuffing is activated on the hand, this is likely unnecessary
+		hose_on_cmd = "activate_hose"
+		print("sending command: "+hose_on_cmd+" to: "+str(addr))
+		client_socket.sendto(bytearray(hose_on_cmd,encoding="utf8"),udp_server_addr)
+
 	#number of hands
 	n = 1
 	
