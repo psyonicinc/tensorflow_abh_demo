@@ -24,6 +24,7 @@ if __name__ == "__main__":
 	parser.add_argument('--no_pinch_lock', help="disallow the grip/pinch locking", action='store_true')
 	parser.add_argument('--no_filter', help="remove lpf for raw", action='store_true')
 	parser.add_argument('--no_hose',help="refrain from sending hose activation command",action='store_true')
+	parser.add_argument('--num_hands',type=int,help="number of hands. min 1 max 2",default=1)
 	args = parser.parse_args()
 	
 	use_grip_cmds = args.do_grip_cmds
@@ -31,22 +32,44 @@ if __name__ == "__main__":
 		print("Using grip commmands")
 	else:
 		print("Using hardloaded commands")
-	
-	hand_port = 34345
-	addr = locate_server_from_bkst_query(hand_port)	
-	print("piping commands to: "+str(addr)+" on port: "+str(hand_port))
-	udp_server_addr = (addr,  hand_port)
-	client_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-	client_socket.settimeout(0)
-
-	if(args.no_hose == False):
-		#note: if PPP stuffing is activated on the hand, this is likely unnecessary
-		hose_on_cmd = "activate_hose"
-		print("sending command: "+hose_on_cmd+" to: "+str(addr))
-		client_socket.sendto(bytearray(hose_on_cmd,encoding="utf8"),udp_server_addr)
 
 	#number of hands
 	n = 1
+	if(args.num_hands >= 1 and args.num_hands <= 2):
+		n = args.num_hands
+
+	
+	addrs = []
+	#"left"
+	hand_port = 34345
+	string_address = locate_server_from_bkst_query(hand_port)[0]	
+	print("piping commands to: "+str(string_address)+" on port: "+str(hand_port))
+	udp_server_addr_tmp = (string_address,  hand_port)
+	addrs.append(udp_server_addr_tmp)
+	client_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+	client_socket.settimeout(0)
+	
+	if(n==2):
+		#"right"
+		hand_port = 23234
+		string_address = locate_server_from_bkst_query(hand_port)[0]
+		print("piping commands to: "+str(string_address)+" on port: "+str(hand_port))
+		udp_server_addr_tmp = (string_address,  hand_port)
+		addrs.append(udp_server_addr_tmp)
+		
+	
+	print("using "+str(len(addrs))+" sockets:")
+	for a in addrs:
+		print(a)
+	
+	
+	if(args.no_hose == False):
+		#note: if PPP stuffing is activated on the hand, this is likely unnecessary
+		hose_on_cmd = "activate_hose"
+		for addr in addrs:
+			print("sending command: "+hose_on_cmd+" to: "+str(addr[0])+":"+str(addr[1]))		
+			client_socket.sendto(bytearray(hose_on_cmd,encoding="utf8"),addr)
+
 	
 	lpf_fps_sos = signal.iirfilter(2, Wn=0.7, btype='lowpass', analog=False, ftype='butter', output='sos', fs=30)	#filter for the fps counter
 
@@ -144,7 +167,7 @@ if __name__ == "__main__":
 					#loopback. Server (subscriber) expectes straight up floating point with a 32 bit checksum. checksum eval not required
 					# dgram = bytearray(udp_pkt(abhlist[0].fpos))	#publish only 1 hand at a time in this context. 
 					# print("sending ", dgram)
-					client_socket.sendto(barr, udp_server_addr)
+					client_socket.sendto(barr, addrs[idx])
 					
 
 					#draw landmarks of the hand we found
@@ -189,13 +212,14 @@ if __name__ == "__main__":
 					msg = create_misc_msg(0x50, 0xC2)
 					print("sending: ", [ hex(b) for b in msg ], "to ser device ", i)
 					barr = bytearray(msg)
-					client_socket.sendto(barr, udp_server_addr)
+					client_socket.sendto(barr, addrs[i])
 					# slist[i].write(msg)
 
 
 			fpsfilt, warr_fps = py_sos_iir(fps, warr_fps, lpf_fps_sos[0])
 			# print (fpsfilt)
 	
-	client_socket.sendto(bytearray("deactivate_hose",encoding="utf8"),udp_server_addr)
+	for addr in addrs:
+		client_socket.sendto(bytearray("deactivate_hose",encoding="utf8"),addr)
 	
 	cap.release()
