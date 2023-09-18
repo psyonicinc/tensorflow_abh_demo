@@ -1,12 +1,24 @@
 import time
 import socket
 
+def get_hostip_idx_from_usr():
+	hostname = socket.gethostname()
+	# addr=socket.gethostbyname(hostname)
+	hostname,aliaslist,addrlist=socket.gethostbyname_ex(hostname)
+
+	print("Select an IP to use from list with a number (0,1,2,...)\r\n"+str(addrlist))
+	usr_string_input = input()
+	usr_input = int(usr_string_input)
+	
+	return usr_input
+
 """
 	Sends query out to server and waits until timeout for a response
 	
 """
-def locate_server_from_bkst_query(port, use_loopback=False, kbrd_ip_select=False):
+def locate_server_from_bkst_query(port, addrlist_idx=None, use_loopback=False,):
 
+	
 	hostname = socket.gethostname()
 	# addr=socket.gethostbyname(hostname)
 	hostname,aliaslist,addrlist=socket.gethostbyname_ex(hostname)
@@ -19,10 +31,8 @@ def locate_server_from_bkst_query(port, use_loopback=False, kbrd_ip_select=False
 
 	if(use_loopback == False):
 		if(len(addrlist) > 1):
-			if( kbrd_ip_select == True):
-				print("Select an IP to use from list with a number (0,1,2,...)\r\n"+str(addrlist))
-				usr_string_input = input()
-				usr_input = int(usr_string_input)
+			if( addrlist_idx != None):
+				usr_input = addrlist_idx
 			else:
 				usr_input = len(addrlist)-1
 		if(usr_input >= 0 and usr_input < len(addrlist)):

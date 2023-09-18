@@ -33,10 +33,15 @@ if __name__ == "__main__":
 	else:
 		print("Using hardloaded commands")
 	
+	
+	usr_idx = None
+	if(args.sel_ip):
+		usr_idx = get_hostip_idx_from_usr()
+	
 	addrs = []
 	#"left"
 	hand_port = 34345
-	string_address,connected = locate_server_from_bkst_query(hand_port,kbrd_ip_select=args.sel_ip)
+	string_address,connected = locate_server_from_bkst_query(hand_port,usr_idx)
 	print("piping commands to: "+str(string_address)+" on port: "+str(hand_port))
 	udp_server_addr_tmp = (string_address,  hand_port)
 	if(connected):
@@ -46,7 +51,7 @@ if __name__ == "__main__":
 		
 	#"right"
 	hand_port = 23234
-	string_address,connected = locate_server_from_bkst_query(hand_port,kbrd_ip_select=args.sel_ip)
+	string_address,connected = locate_server_from_bkst_query(hand_port,usr_idx)
 	print("piping commands to: "+str(string_address)+" on port: "+str(hand_port))
 	udp_server_addr_tmp = (string_address,  hand_port)
 	if(connected):
