@@ -5,7 +5,7 @@ import socket
 	Sends query out to server and waits until timeout for a response
 	
 """
-def locate_server_from_bkst_query(port, use_loopback=False, addridx=None):
+def locate_server_from_bkst_query(port, use_loopback=False, kbrd_ip_select=False):
 
 	hostname = socket.gethostname()
 	# addr=socket.gethostbyname(hostname)
@@ -19,12 +19,12 @@ def locate_server_from_bkst_query(port, use_loopback=False, addridx=None):
 
 	if(use_loopback == False):
 		if(len(addrlist) > 1):
-			if( usr_input == None):
+			if( kbrd_ip_select == True):
 				print("Select an IP to use from list with a number (0,1,2,...)\r\n"+str(addrlist))
 				usr_string_input = input()
 				usr_input = int(usr_string_input)
 			else:
-				usr_input = addridx
+				usr_input = len(addrlist)-1
 		if(usr_input >= 0 and usr_input < len(addrlist)):
 			addr=str(addrlist[usr_input])
 			print("Host IP Addr: "+addr)

@@ -25,6 +25,7 @@ if __name__ == "__main__":
 	parser.add_argument('--no_filter', help="remove lpf for raw", action='store_true')
 	parser.add_argument('--no_hose',help="refrain from sending hose activation command",action='store_true')
 	parser.add_argument('--num_hands',type=int,help="number of hands. min 1 max 2",default=1)
+	parser.add_argument('--sel_ip',help="manually select desired LAN IP if multiple network adapters are present",action='store_true')
 	args = parser.parse_args()
 	
 	use_grip_cmds = args.do_grip_cmds
@@ -42,7 +43,7 @@ if __name__ == "__main__":
 	addrs = []
 	#"left"
 	hand_port = 34345
-	string_address = locate_server_from_bkst_query(hand_port)[0]	
+	string_address = locate_server_from_bkst_query(hand_port,kbrd_ip_select=args.sel_ip)[0]	
 	print("piping commands to: "+str(string_address)+" on port: "+str(hand_port))
 	udp_server_addr_tmp = (string_address,  hand_port)
 	addrs.append(udp_server_addr_tmp)
@@ -52,7 +53,7 @@ if __name__ == "__main__":
 	if(n==2):
 		#"right"
 		hand_port = 23234
-		string_address = locate_server_from_bkst_query(hand_port)[0]
+		string_address = locate_server_from_bkst_query(hand_port,kbrd_ip_select=args.sel_ip)[0]
 		print("piping commands to: "+str(string_address)+" on port: "+str(hand_port))
 		udp_server_addr_tmp = (string_address,  hand_port)
 		addrs.append(udp_server_addr_tmp)
@@ -168,7 +169,6 @@ if __name__ == "__main__":
 					# dgram = bytearray(udp_pkt(abhlist[0].fpos))	#publish only 1 hand at a time in this context. 
 					# print("sending ", dgram)
 					client_socket.sendto(barr, addrs[idx])
-					
 
 					#draw landmarks of the hand we found
 					hand_landmarks = results.multi_hand_landmarks[idx]
