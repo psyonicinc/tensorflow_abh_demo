@@ -158,17 +158,17 @@ if __name__ == "__main__":
 					#args.no_pinch_lock
 					
 					#fpos, warr, hw_b, hb_w, handed_sign, scale, dist_to_thumb = get_fpos(results, mp_hands, fpos, warr)
-					abhlist[idx].update(mp_hands, results.multi_hand_landmarks[idx].landmark, results.multi_handedness[idx].classification[0].index)
+					abhlist[ser_idx].update(mp_hands, results.multi_hand_landmarks[idx].landmark, ser_idx)
 					#if port:
 					
 					# Write the finger array out over UART to the hand!
-					msg = farr_to_barr(0x50, abhlist[idx].fpos)
+					msg = farr_to_barr(0x50, abhlist[ser_idx].fpos)
 					barr = bytearray(msg)
 					
 					#loopback. Server (subscriber) expectes straight up floating point with a 32 bit checksum. checksum eval not required
 					# dgram = bytearray(udp_pkt(abhlist[0].fpos))	#publish only 1 hand at a time in this context. 
 					# print("sending ", dgram)
-					client_socket.sendto(barr, addrs[idx])
+					client_socket.sendto(barr, addrs[ser_idx])
 
 					#draw landmarks of the hand we found
 					hand_landmarks = results.multi_hand_landmarks[idx]
@@ -181,9 +181,9 @@ if __name__ == "__main__":
 
 					#render a static point in the base frame of the model. Visualization of the position-orientation accuracy.
 					#Point should be just in front of the palm. Compensated for handedness
-					static_point_b = np.array([4.16, 1.05, -1.47*abhlist[idx].handed_sign, 1])*abhlist[idx].scale			
+					static_point_b = np.array([4.16, 1.05, -1.47*abhlist[ser_idx].handed_sign, 1])*abhlist[ser_idx].scale			
 					static_point_b[3] = 1	#remove scaling that was applied to the immutable '1'
-					neutral_thumb_w = abhlist[idx].hw_b.dot(static_point_b)	#get dot position in world coordinates for a visual tag/reference				
+					neutral_thumb_w = abhlist[ser_idx].hw_b.dot(static_point_b)	#get dot position in world coordinates for a visual tag/reference				
 					l_list = landmark_pb2.NormalizedLandmarkList(
 						landmark = [
 							v4_to_landmark(neutral_thumb_w)
