@@ -95,14 +95,15 @@ def newframe():
 				tlen = rPos.size + rI.size + rV.size + rFSR.size
 				if(tlen != 0):
 					print(str(np.int16(rPos))+str(rI)+str(np.int16(rV))+str(rFSR))
+					d[1:len(d)] = rPos
+					yield d
 				else:
 					print(pkt)
-				d[1:len(d)] = rPos
+				
 			
 		except BlockingIOError:	#ignore nonblocking read errors
 			pass
-			
-		yield d
+		
 
 	
 
