@@ -35,24 +35,24 @@ def get_host_ip_to_bind(port,use_loopback=False):
 			return addr
 
 
-def blocking_input(kill_sig, soc, dest):
-	kill_sig.clear()
-	try:
-		while(True):
-			str = input()
+def blocking_input(kill_sig, soc, dest, myname):
+	while(kill_sig.is_set()==False):
+		try:
+			str = myname+input()
 			pld = bytearray(str,encoding='utf8')
 			soc.sendto(pld,dest)
-	except KeyboardInterrupt:
-		kill_sig.set()
+		except EOFError:
+			kill_sig.set()
 
 def print_thread(kill_sig, soc):
-		while(kill_sig.is_set() == False):	
-			try:
-				pkt,source_addr = server_socket.recvfrom(512)
-				print("From: "+source_addr[0]+": "+str(pkt))
-			except:
-				pass
+	while(kill_sig.is_set()==False):	
+		try:
+			pkt,source_addr = server_socket.recvfrom(512)
+			print("From: "+source_addr[0]+": "+str(pkt))
+		except:
+			pass
 		
+
 
 if __name__ == "__main__":
 	port = get_port_from_usr()
@@ -87,8 +87,9 @@ if __name__ == "__main__":
 	recvstr = ''
 
 	ks = threading.Event()
-	t0 = threading.Thread(target=blocking_input, args=(ks,client_socket,dest_addr,))
-	t1 = threading.Thread(target=print_thread, args=(ks,client_socket,))
+	t0 = threading.Thread(target=blocking_input, args=(ks, client_socket,dest_addr,myname,))
+	t1 = threading.Thread(target=print_thread, args=(ks, client_socket,))
+
 	
 	t0.start()
 	t1.start()
