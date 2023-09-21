@@ -25,6 +25,7 @@ if __name__ == "__main__":
 	parser.add_argument('--no_filter', help="remove lpf for raw", action='store_true')
 	parser.add_argument('--no_hose',help="refrain from sending hose activation command",action='store_true')
 	parser.add_argument('--sel_ip',help="manually select desired LAN IP if multiple network adapters are present",action='store_true')
+	parser.add_argument('--parse_reply',help="add reply parsing",action='store_true')
 	args = parser.parse_args()
 	
 	use_grip_cmds = args.do_grip_cmds
@@ -37,28 +38,35 @@ if __name__ == "__main__":
 	usr_idx = None
 	if(args.sel_ip):
 		usr_idx = get_hostip_idx_from_usr()
-	
+		
 	addrs = []
+	ports = [34345,23234]
 	#"left"
-	hand_port = 34345
-	string_address,connected = locate_server_from_bkst_query(hand_port,usr_idx)
-	print("piping commands to: "+str(string_address)+" on port: "+str(hand_port))
-	udp_server_addr_tmp = (string_address,  hand_port)
+	string_address, connected, host_ip = locate_server_from_bkst_query(ports[0],usr_idx)
+	print("piping commands to: "+str(string_address)+" on port: "+str(ports[0]))
+	udp_server_addr_tmp = (string_address,  ports[0])
 	if(connected):
 		addrs.append(udp_server_addr_tmp)
-	client_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-	client_socket.settimeout(0)
 		
 	#"right"
-	hand_port = 23234
-	string_address,connected = locate_server_from_bkst_query(hand_port,usr_idx)
-	print("piping commands to: "+str(string_address)+" on port: "+str(hand_port))
-	udp_server_addr_tmp = (string_address,  hand_port)
+	string_address,connected, host_ip = locate_server_from_bkst_query(ports[1],usr_idx)
+	print("piping commands to: "+str(string_address)+" on port: "+str(ports[1]))
+	udp_server_addr_tmp = (string_address,  ports[1])
 	if(connected):
 		addrs.append(udp_server_addr_tmp)
 	
 	#number of hands
 	n = len(addrs)
+	
+	client_sockets = []
+	for i in range(0,n):
+		client_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+		client_socket.settimeout(0)
+		bindip = (host_ip,ports[i])
+		print("binding socket "+str(i)+" to "+bindip[0]+":"+str(bindip[1]))
+		client_socket.bind(bindip)
+		client_sockets.append(client_socket)
+		
 	
 	print("using "+str(len(addrs))+" sockets:")
 	for a in addrs:
@@ -69,9 +77,10 @@ if __name__ == "__main__":
 		if(args.no_hose == False):
 			#note: if PPP stuffing is activated on the hand, this is likely unnecessary
 			hose_on_cmd = "activate_hose"
-			for addr in addrs:
+			for i in range(0,len(addrs)):
+				addr = addrs[i]
 				print("sending command: "+hose_on_cmd+" to: "+str(addr[0])+":"+str(addr[1]))		
-				client_socket.sendto(bytearray(hose_on_cmd,encoding="utf8"),addr)
+				client_sockets[i].sendto(bytearray(hose_on_cmd,encoding="utf8"),addr)
 
 		
 		lpf_fps_sos = signal.iirfilter(2, Wn=0.7, btype='lowpass', analog=False, ftype='butter', output='sos', fs=30)	#filter for the fps counter
@@ -170,7 +179,21 @@ if __name__ == "__main__":
 						#loopback. Server (subscriber) expectes straight up floating point with a 32 bit checksum. checksum eval not required
 						# dgram = bytearray(udp_pkt(abhlist[0].fpos))	#publish only 1 hand at a time in this context. 
 						# print("sending ", dgram)
-						client_socket.sendto(barr, addrs[ser_idx])
+						client_sockets[ser_idx].sendto(barr, addrs[ser_idx])
+
+						if (args.parse_reply == True):
+							try:
+								pkt,addr = client_sockets[ser_idx].recvfrom(bufsize)
+								if(len(pkt) != 0):
+									rPos,rI,rV,rFSR = parse_hand_data(pkt)		
+									tlen = rPos.size + rI.size + rV.size + rFSR.size
+									if(tlen != 0):
+										print(str(np.int16(rPos))+str(rI)+str(np.int16(rV))+str(rFSR))
+									else:
+										print(pkt)
+							except BlockingIOError:	#ignore nonblocking read errors
+								pass
+
 
 						#draw landmarks of the hand we found
 						hand_landmarks = results.multi_hand_landmarks[idx]
@@ -214,14 +237,15 @@ if __name__ == "__main__":
 						msg = create_misc_msg(0x50, 0xC2)
 						print("sending: ", [ hex(b) for b in msg ], "to ser device ", i)
 						barr = bytearray(msg)
-						client_socket.sendto(barr, addrs[i])
+						client_sockets[i].sendto(barr, addrs[i])
 						# slist[i].write(msg)
 
 
 				fpsfilt, warr_fps = py_sos_iir(fps, warr_fps, lpf_fps_sos[0])
 				# print (fpsfilt)
 		
-		for addr in addrs:
+		for i in range(0,len(addrs)):
+			addr = addrs[i]
 			client_socket.sendto(bytearray("deactivate_hose",encoding="utf8"),addr)
 		
 		cap.release()

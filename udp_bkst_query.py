@@ -60,8 +60,8 @@ def locate_server_from_bkst_query(port, addrlist_idx=None, use_loopback=False,):
 			if(len(pkt) > 0):
 				print("received" + str(pkt)+" from: ",str(addr[0]))
 				found = 1
-				return str(addr[0]), 1
+				return str(addr[0]), 1, addrlist[usr_input]
 		except:
 			pass
 	if(found == 0):
-		return str(addrmod), 0
+		return str(addrmod), 0, addrlist[usr_input]
