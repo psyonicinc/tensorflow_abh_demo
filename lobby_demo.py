@@ -29,6 +29,8 @@ import subprocess
 import pyautogui
 import os
 
+
+
 def get_screen_resolution():
     output = subprocess.Popen('xrandr | grep "\*" | cut -d" " -f4',shell=True, stdout=subprocess.PIPE).communicate()[0]
     resolution = output.split()[0].split(b'x')
@@ -75,6 +77,7 @@ class SerialDisplayer:
                 elif not self.no_input and ( (not self.CP210x_only) or (self.CP210x_only == True and (p[1].find('CP210') != -1) ) ):
                     print("connecting input handler...")
                     self.input_listener = (serial.Serial(p[0], '460800', timeout=1))
+                    print("connected input handler: ", p)
 
             except Exception:
                 print("Failed to connect. here's traceback: ")
@@ -95,7 +98,7 @@ class SerialDisplayer:
             ir_port = self.input_listener.port
             self.input_listener.close()
             self.input_listener = serial.Serial(ir_port,'500000', timeout=1)
-
+            
         for s in self.slist:
             buf = create_misc_msg(0x50, 0xC2)
             print("writing thumb filter message on com port: ", s)
@@ -116,12 +119,15 @@ class SerialDisplayer:
 
                 msg = farr_to_barr(0x50, fpos)
                 serial.write(msg)
+        
 
             except:
                 pass 
 
     def run(self):
         """main loop that runs"""
+
+        First_Time_run = False
         lpf_fps_sos = signal.iirfilter(2, Wn=0.7, btype='lowpass', analog=False, ftype='butter', output='sos', fs=30)	#filter for the fps counter
         prev_cmd_was_grip = [0,0]
 
@@ -175,8 +181,14 @@ class SerialDisplayer:
                         transition_count = 0
 
                     elif 'X' in data_char:
-                        show_webcam = False
+                        if(First_Time_run):
+                            show_webcam = False
+                        else:
+                            show_webcam = True
+
+                        
                         transition_count = 0
+
 
                     elif 'Y' in data_char and not show_webcam:
                         wave_hand = not wave_hand
