@@ -127,7 +127,6 @@ class SerialDisplayer:
     def run(self):
         """main loop that runs"""
 
-        First_Time_run = False
         lpf_fps_sos = signal.iirfilter(2, Wn=0.7, btype='lowpass', analog=False, ftype='butter', output='sos', fs=30)	#filter for the fps counter
         prev_cmd_was_grip = [0,0]
 
@@ -165,6 +164,7 @@ class SerialDisplayer:
 
             send_unsampling_msg_ts = 0
 
+            First_Time_run = True
             show_webcam = False
             wave_hand = True
             transition_count = 100
@@ -179,12 +179,15 @@ class SerialDisplayer:
                     if 'A' in data_char:
                         show_webcam = True
                         transition_count = 0
+                        if(First_Time_run):
+                            First_Time_run = False
 
                     elif 'X' in data_char:
                         if(First_Time_run):
-                            show_webcam = False
-                        else:
                             show_webcam = True
+                            First_Time_run = False
+                        else:
+                            show_webcam = False
 
                         
                         transition_count = 0
