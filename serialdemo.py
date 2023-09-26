@@ -71,11 +71,11 @@ try:
 					payload, stuff_buffer = unstuff_PPP_stream(b,stuff_buffer)
 					if(len(payload) != 0):
 						rPos,rI,rV,rFSR = parse_hand_data(payload)
-						print(str(np.int16(rPos))+str(rI)+str(np.int16(rV))+str(rFSR))
-
-						if( (rPos.size + rI.size + rV.size + rFSR.size) == 0):
-							print("got a bad one")							
-						#Optional: Dump any remaining data
+						if( (rPos.size + rI.size + rV.size + rFSR.size) != 0):
+							print(str(np.int16(rPos))+str(rI)+str(np.int16(rV))+str(rFSR))
+						else:
+							print("bad packet")
+						# Optional: Dump any remaining data
 						# while(slist[0].in_waiting != 0):	
 							# bytes = slist[0].read(1024)
 

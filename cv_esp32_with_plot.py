@@ -15,58 +15,13 @@ from abh_get_fpos import *
 import argparse
 import socket
 from udp_bkst_query import *
+import threading
 
-if __name__ == "__main__":
+
+def main_thread(args, addrs):
 		
-	parser = argparse.ArgumentParser(description='Hand CV Demo Parser')
-	parser.add_argument('--do_grip_cmds' , help="Include flag for using grip commands for grip recognitions", action='store_true')
-	parser.add_argument('--camera_capture', type=int, help="opencv capture number", default=0)
-	parser.add_argument('--no_pinch_lock', help="disallow the grip/pinch locking", action='store_true')
-	parser.add_argument('--no_filter', help="remove lpf for raw", action='store_true')
-	parser.add_argument('--no_hose',help="refrain from sending hose activation command",action='store_true')
-	parser.add_argument('--sel_ip',help="manually select desired LAN IP if multiple network adapters are present",action='store_true')
-	parser.add_argument('--parse_reply',help="activate reply parsing",action='store_true')
-	args = parser.parse_args()
-	
-	use_grip_cmds = args.do_grip_cmds
-	if(use_grip_cmds):
-		print("Using grip commmands")
-	else:
-		print("Using hardloaded commands")
-	
-	
-	usr_idx = None
-	if(args.sel_ip):
-		usr_idx = get_hostip_idx_from_usr()
-		
-	addrs = []
-	ports = [34345,23234]
-	#"left"
-	string_address, connected, host_ip = locate_server_from_bkst_query(ports[0],usr_idx)
-	print("piping commands to: "+str(string_address)+" on port: "+str(ports[0]))
-	udp_server_addr_tmp = (string_address,  ports[0])
-	if(connected):
-		addrs.append(udp_server_addr_tmp)
-		
-	#"right"
-	string_address,connected, host_ip = locate_server_from_bkst_query(ports[1],usr_idx)
-	print("piping commands to: "+str(string_address)+" on port: "+str(ports[1]))
-	udp_server_addr_tmp = (string_address,  ports[1])
-	if(connected):
-		addrs.append(udp_server_addr_tmp)
-	
 	#number of hands
 	n = len(addrs)
-	
-	client_sockets = []
-	for i in range(0,n):
-		client_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-		client_socket.settimeout(0)
-		bindip = (host_ip,ports[i])
-		print("binding socket "+str(i)+" to "+bindip[0]+":"+str(bindip[1]))
-		client_socket.bind(bindip)
-		client_sockets.append(client_socket)
-		
 	
 	print("using "+str(len(addrs))+" sockets:")
 	for a in addrs:
@@ -77,10 +32,9 @@ if __name__ == "__main__":
 		if(args.no_hose == False):
 			#note: if PPP stuffing is activated on the hand, this is likely unnecessary
 			hose_on_cmd = "activate_hose"
-			for i in range(0,len(addrs)):
-				addr = addrs[i]
+			for addr in addrs:
 				print("sending command: "+hose_on_cmd+" to: "+str(addr[0])+":"+str(addr[1]))		
-				client_sockets[i].sendto(bytearray(hose_on_cmd,encoding="utf8"),addr)
+				client_socket.sendto(bytearray(hose_on_cmd,encoding="utf8"),addr)
 
 		
 		lpf_fps_sos = signal.iirfilter(2, Wn=0.7, btype='lowpass', analog=False, ftype='butter', output='sos', fs=30)	#filter for the fps counter
@@ -173,30 +127,13 @@ if __name__ == "__main__":
 						#if port:
 						
 						# Write the finger array out over UART to the hand!
-						# msg = farr_to_barr(0x50, abhlist[ser_idx].fpos)
-						msg = farr_to_dposition(0x50, np.float32(abhlist[ser_idx].fpos), 1)
+						msg = farr_to_barr(0x50, abhlist[ser_idx].fpos)
 						barr = bytearray(msg)
 						
-
-		
 						#loopback. Server (subscriber) expectes straight up floating point with a 32 bit checksum. checksum eval not required
 						# dgram = bytearray(udp_pkt(abhlist[0].fpos))	#publish only 1 hand at a time in this context. 
 						# print("sending ", dgram)
-						client_sockets[ser_idx].sendto(barr, addrs[ser_idx])
-
-						if(args.parse_reply):
-							try:
-								pkt,addr = client_sockets[ser_idx].recvfrom(512)
-								if(len(pkt) != 0):
-									rPos,rI,rV,rFSR = parse_hand_data(pkt)		
-									tlen = rPos.size + rI.size + rV.size + rFSR.size
-									if(tlen != 0):
-										print(str(np.int16(rPos))+str(rI)+str(np.int16(rV))+str(rFSR))
-									else:
-										print(pkt)
-							except BlockingIOError:	#ignore nonblocking read errors
-								pass
-
+						client_socket.sendto(barr, addrs[ser_idx])
 
 						#draw landmarks of the hand we found
 						hand_landmarks = results.multi_hand_landmarks[idx]
@@ -240,15 +177,135 @@ if __name__ == "__main__":
 						msg = create_misc_msg(0x50, 0xC2)
 						print("sending: ", [ hex(b) for b in msg ], "to ser device ", i)
 						barr = bytearray(msg)
-						client_sockets[i].sendto(barr, addrs[i])
+						client_socket.sendto(barr, addrs[i])
 						# slist[i].write(msg)
 
 
 				fpsfilt, warr_fps = py_sos_iir(fps, warr_fps, lpf_fps_sos[0])
 				# print (fpsfilt)
 		
-		for i in range(0,len(addrs)):
-			addr = addrs[i]
+		for addr in addrs:
 			client_socket.sendto(bytearray("deactivate_hose",encoding="utf8"),addr)
 		
 		cap.release()
+		
+
+start_time = time.time()
+
+ylower = -2
+yupper = 2
+bufwidth = 200
+num_lines = 4
+
+fig, ax = plt.subplots()
+ax.set_ylim(ylower,yupper)
+
+lines = []
+for i in range(num_lines):
+	lines.append(ax.plot([],[])[0])
+
+xbuf = np.zeros(bufwidth)
+ybuf = np.zeros((num_lines, bufwidth))
+
+	
+def animate(data):
+	global xbuf
+	global ybuf
+	global lines
+
+
+	t = time.time()-start_time
+	xbuf = np.roll(xbuf,1)	#roll xbuf by 1
+	xbuf[0] = t	#load in new value
+	
+	
+	for i in range(0,num_lines):
+		ybuf[i] = np.roll(ybuf[i],1) #roll 1
+		ybuf[i][0] = i*np.sin(t)*np.sin(t*2*np.pi + i)	#load new value
+		# ybuf[i][0] = udp_pkt[i+1]	#load new value
+
+	xmin = np.min(xbuf)
+	xmax = np.max(xbuf)
+	plt.setp(ax,xlim = (xmin,xmax))
+	plt.setp(ax,ylim = (np.min(ybuf),np.max(ybuf)))
+	
+	ax.relim()
+	ax.autoscale_view(scalex=False, scaley=False)
+
+	for i, line in enumerate(lines):
+		line.set_data(xbuf,ybuf[i])
+   
+	return lines
+
+
+def plot_thread(args,addrs):
+
+	ani = animation.FuncAnimation(
+		fig, animate, init_func=None, interval=1, blit=True, save_count=None, cache_frame_data=False,repeat=False)
+
+	# To save the animation, use e.g.
+	#
+	# ani.save("movie.mp4")
+	#
+	# or
+	#
+	# from matplotlib.animation import FFMpegWriter
+	# writer = FFMpegWriter(fps=15, metadata=dict(artist='Me'), bitrate=1800)
+	# ani.save("movie.mp4", writer=writer)
+
+	plt.show()
+
+	
+	
+
+if __name__ == "__main__":
+
+	parser = argparse.ArgumentParser(description='Hand CV Demo Parser')
+	parser.add_argument('--do_grip_cmds' , help="Include flag for using grip commands for grip recognitions", action='store_true')
+	parser.add_argument('--camera_capture', type=int, help="opencv capture number", default=0)
+	parser.add_argument('--no_pinch_lock', help="disallow the grip/pinch locking", action='store_true')
+	parser.add_argument('--no_filter', help="remove lpf for raw", action='store_true')
+	parser.add_argument('--no_hose',help="refrain from sending hose activation command",action='store_true')
+	parser.add_argument('--sel_ip',help="manually select desired LAN IP if multiple network adapters are present",action='store_true')
+	
+	args = parser.parse_args()
+	
+	use_grip_cmds = args.do_grip_cmds
+	if(use_grip_cmds):
+		print("Using grip commmands")
+	else:
+		print("Using hardloaded commands")
+	
+	
+	usr_idx = None
+	if(args.sel_ip):
+		usr_idx = get_hostip_idx_from_usr()
+	
+	addrs = []
+	#"left"
+	hand_port = 34345
+	string_address,connected = locate_server_from_bkst_query(hand_port,usr_idx)
+	print("piping commands to: "+str(string_address)+" on port: "+str(hand_port))
+	udp_server_addr_tmp = (string_address,  hand_port)
+	if(connected):
+		addrs.append(udp_server_addr_tmp)
+	client_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+	client_socket.settimeout(0)
+		
+	#"right"
+	hand_port = 23234
+	string_address,connected = locate_server_from_bkst_query(hand_port,usr_idx)
+	print("piping commands to: "+str(string_address)+" on port: "+str(hand_port))
+	udp_server_addr_tmp = (string_address,  hand_port)
+	if(connected):
+		addrs.append(udp_server_addr_tmp)
+
+
+
+	t0 = threading.Thread(target=main_thread,args=(args,addrs,))
+	t1 = threading.Thread(target=plot_thread,args=(args,addrs,))
+	t0.start()
+	t0.join()
+	t1.start()
+	t1.join()
+	print("done")

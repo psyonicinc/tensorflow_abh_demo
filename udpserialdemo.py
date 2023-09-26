@@ -9,18 +9,26 @@ import socket
 import struct
 
 
+
+usr_idx = get_hostip_idx_from_usr()
+
 hand_port = 34345
-addr = locate_server_from_bkst_query(hand_port)	
+addr, found, ourip = locate_server_from_bkst_query(hand_port, usr_idx)	
 print("piping commands to: "+str(addr)+" on port: "+str(hand_port))
 udp_server_addr = (addr,  hand_port)
 client_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 client_socket.settimeout(0)
 bufsize = 512
+client_socket.bind( (ourip, hand_port) )
 
 #note: if PPP stuffing is activated on the hand, this is likely unnecessary
 hose_on_cmd = "deactivate_hose"
 print("sending command: "+hose_on_cmd+" to: "+str(addr))
 client_socket.sendto(bytearray(hose_on_cmd,encoding="utf8"),udp_server_addr)
+
+# hose_on_cmd = "activate_hose"
+# print("sending command: "+hose_on_cmd+" to: "+str(addr))
+# client_socket.sendto(bytearray(hose_on_cmd,encoding="utf8"),udp_server_addr)
 
 
 buf = create_misc_msg(0x50, 0xC2) # cmd to enable upsampling of the thumb rotator
@@ -50,7 +58,7 @@ try:
 				rPos,rI,rV,rFSR = parse_hand_data(pkt)		
 				tlen = rPos.size + rI.size + rV.size + rFSR.size
 				if(tlen != 0):
-					print(str(np.int16(rPos))+str(rI)+str(np.int16(rV))+str(rFSR))
+					print(addr[0]+":"+str(addr[1])+" "+str(np.int16(rPos))+str(rI)+str(np.int16(rV))+str(rFSR))
 				else:
 					print(pkt)
 		except:	#ignore errors, cuz nonblocking read always throws an exception
