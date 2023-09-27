@@ -60,11 +60,11 @@ try:
 				if(tlen != 0):
 					print(addr[0]+":"+str(addr[1])+" "+str(np.int16(rPos))+str(rI)+str(np.int16(rV))+str(rFSR))
 				else:
-					print(pkt)
+					print(pkt.hex())
 		except:	#ignore errors, cuz nonblocking read always throws an exception
 			pass
-
-		time.sleep(.001)
+		
+		time.sleep(.005)
 			
 except KeyboardInterrupt:
 	pass

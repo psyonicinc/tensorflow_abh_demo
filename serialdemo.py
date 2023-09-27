@@ -50,6 +50,7 @@ try:
 	rFSR = np.array([])
 	
 	stuff_buffer = np.array([])
+
 	while 1:
 		
 		
@@ -67,17 +68,24 @@ try:
 			bytes = slist[0].read(1024)	#gigantic read size with nonblocking
 			if(len(bytes) != 0): #redundant, but fine to keep
 				npbytes = np.frombuffer(bytes, np.uint8)
+				# npbytes = np.append(npbytes, np.uint8(0))
+				# npbytes = np.insert(npbytes, 0, 0)
+				# print(npbytes.tobytes().hex())
 				for b in npbytes:
 					payload, stuff_buffer = unstuff_PPP_stream(b,stuff_buffer)
 					if(len(payload) != 0):
 						rPos,rI,rV,rFSR = parse_hand_data(payload)
 						if( (rPos.size + rI.size + rV.size + rFSR.size) != 0):
+							# print("Pass, "+str(len(payload)))
 							print(str(np.int16(rPos))+str(rI)+str(np.int16(rV))+str(rFSR))
-						else:
-							print("bad packet")
-						# Optional: Dump any remaining data
-						# while(slist[0].in_waiting != 0):	
-							# bytes = slist[0].read(1024)
+						else:	
+							print("Fail, "+str(len(payload)))
+							
+						# else:
+							# print(npbytes)
+							# Optional: Dump any remaining data
+							# while(slist[0].in_waiting != 0):	
+								# bytes = slist[0].read(1024)
 
 		
 		
