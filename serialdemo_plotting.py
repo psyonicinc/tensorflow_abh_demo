@@ -52,7 +52,7 @@ start_time = time.time()
 ylower = -2
 yupper = 2
 bufwidth = 200
-num_lines = 6
+num_lines = 30
 fig, ax = plt.subplots()
 ax.set_ylim(ylower,yupper)
 lines = []
@@ -102,8 +102,9 @@ def animate(unused):
 					rPos,rI,rV,rFSR = parse_hand_data(payload)
 					if( (rPos.size + rI.size + rV.size + rFSR.size) != 0):
 						# print("Pass, "+str(len(payload)))
-						# print(str(np.int16(rPos))+str(rI)+str(np.int16(rV))+str(rFSR))
-						data[1:len(data)] = rPos
+						print(str(np.int16(rPos))+str(rI)+str(np.int16(rV))+str(rFSR))
+						# data[1:len(data)] = rPos
+						data[1:len(data)] = rFSR
 
 					else:	
 						pass
