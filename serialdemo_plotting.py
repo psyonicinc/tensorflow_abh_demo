@@ -61,55 +61,10 @@ for i in range(num_lines):
 xbuf = np.zeros(bufwidth)
 ybuf = np.zeros((num_lines, bufwidth))
 
-
-stuff_buffer = np.array([])
-data = np.zeros(num_lines+1)
-
-def animate(unused):
+def animate(data):
 	global xbuf
 	global ybuf
 	global lines
-	global slist
-	global start_time
-	global stuff_buffer
-	global data
-	
-	fpos = np.zeros(num_lines)
-	
-	t = time.time() - start_time
-	data[0] = t
-	for i in range(0, len(fpos)):
-		ft = t*3 + i*(2*np.pi)/12
-		fpos[i] = (.5*np.sin(ft)+.5)*45+15
-	fpos[5] = -fpos[5]
-	
-	
-	msg = farr_to_dposition(0x50, fpos, 1)
-	slist[0].write(msg)
-
-	time.sleep(.01)
-
-	while(slist[0].in_waiting != 0):	#dump all the data
-		bytes = slist[0].read(1024)	#gigantic read size with nonblocking
-		if(len(bytes) != 0): #redundant, but fine to keep
-			npbytes = np.frombuffer(bytes, np.uint8)
-			# npbytes = np.append(npbytes, np.uint8(0))
-			# npbytes = np.insert(npbytes, 0, 0)
-			# print(npbytes.tobytes().hex())
-			for b in npbytes:
-				payload, stuff_buffer = unstuff_PPP_stream(b,stuff_buffer)
-				if(len(payload) != 0):
-					rPos,rI,rV,rFSR = parse_hand_data(payload)
-					if( (rPos.size + rI.size + rV.size + rFSR.size) != 0):
-						# print("Pass, "+str(len(payload)))
-						print(str(np.int16(rPos))+str(rI)+str(np.int16(rV))+str(rFSR))
-						# data[1:len(data)] = rPos
-						data[1:len(data)] = rFSR
-
-					else:	
-						pass
-						# print("Fail, "+str(len(payload)))
-
 
 
 	xbuf = np.roll(xbuf,1)	#roll xbuf by 1
@@ -134,6 +89,53 @@ def animate(unused):
    
 	return lines
 
+def newframe():
+	global slist
+	
+	
+
+	
+	d = np.zeros(num_lines+1)
+
+	# yield d
+	fpos = [15., 15., 15., 15., 15., -15.]																									
+	stuff_buffer = np.array([])
+	rPos = np.array([])
+	rI = np.array([])
+	rV = np.array([])
+	rFSR = np.array([])
+	while(1):
+		t = time.time() - start_time
+		d[0] = t
+		for i in range(0, len(fpos)):
+			ft = t*3 + i*(2*np.pi)/12
+			fpos[i] = (.5*np.sin(ft)+.5)*45+15
+		fpos[5] = -fpos[5]
+		
+		
+		msg = farr_to_dposition(0x50, fpos, 1)
+		slist[0].write(msg)
+		
+		time.sleep(.001)
+		
+		while(slist[0].in_waiting != 0):	#dump all the data
+			bytes = slist[0].read(1024)	#gigantic read size with nonblocking
+			if(len(bytes) != 0): #redundant, but fine to keep
+				npbytes = np.frombuffer(bytes, np.uint8)
+				# npbytes = np.append(npbytes, np.uint8(0))
+				# npbytes = np.insert(npbytes, 0, 0)
+				# print(npbytes.tobytes().hex())
+				for b in npbytes:
+					payload, stuff_buffer = unstuff_PPP_stream(b,stuff_buffer)
+					if(len(payload) != 0):
+						rPos,rI,rV,rFSR = parse_hand_data(payload)
+						if( (rPos.size + rI.size + rV.size + rFSR.size) != 0):
+							# # print("Pass, "+str(len(payload)))
+							# # print(str(np.int16(rPos))+str(rI)+str(np.int16(rV))+str(rFSR))
+							# d[1:len(d)] = rPos
+							d[1:len(d)] = rFSR
+							yield d
+		
 
 
 
@@ -142,7 +144,7 @@ def animate(unused):
 	
 
 ani = animation.FuncAnimation(
-	fig, animate, init_func=None, interval=1, blit=True, save_count=None, cache_frame_data=False,repeat=False)
+	fig, animate, frames=newframe, init_func=None, interval=1, blit=True, save_count=None, cache_frame_data=False,repeat=False)
 
 plt.show()
 	
