@@ -9,31 +9,37 @@ import socket
 import struct
 
 
-
-usr_idx = get_hostip_idx_from_usr()
-
 hand_port = 34345
-addr, found, ourip = locate_server_from_bkst_query(hand_port, usr_idx)	
-print("piping commands to: "+str(addr)+" on port: "+str(hand_port))
-udp_server_addr = (addr,  hand_port)
-client_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-client_socket.settimeout(0)
-bufsize = 512
-client_socket.bind( (ourip, hand_port) )
+bkst_ip = (get_bkst_ip_from_usr(), hand_port)
+
+our_port = 1435
+rx_offset = 1			#important! default behavior is for this to be ZERO, but you can split streams for multiprocess activity with a command line option on the bridge. A nonzero value (typically 1) should be loaded here to match setting on udp bridge
+tx_skt = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+tx_skt.settimeout(0)
+tx_skt.bind(('0.0.0.0', (our_port))) #we could bind to anything here
+
+
+rx_skt = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+rx_skt.settimeout(0)
+if(rx_offset != 0):
+	bindaddr = ('0.0.0.0', (our_port+rx_offset))
+	rx_skt.bind( bindaddr )
+	print("binding to "+bindaddr[0]+":"+str(bindaddr[1]))
+else:
+	rx_skt = tx_skt
+
+print("dest="+bkst_ip[0]+":"+str(bkst_ip[1]))
+target_addr = get_ip_of_targ(bkst_ip, tx_skt, rx_skt)
+if(target_addr != ''):
+	print("found target at "+target_addr[0]+":"+str(target_addr[1]))
+else:
+	target_addr = bkst_ip
+
 
 #note: if PPP stuffing is activated on the hand, this is likely unnecessary
-hose_on_cmd = "deactivate_hose"
-print("sending command: "+hose_on_cmd+" to: "+str(addr))
-client_socket.sendto(bytearray(hose_on_cmd,encoding="utf8"),udp_server_addr)
-
-# hose_on_cmd = "activate_hose"
-# print("sending command: "+hose_on_cmd+" to: "+str(addr))
-# client_socket.sendto(bytearray(hose_on_cmd,encoding="utf8"),udp_server_addr)
-
-
-buf = create_misc_msg(0x50, 0xC2) # cmd to enable upsampling of the thumb rotator
-buf = bytearray(buf)
-client_socket.sendto(buf, udp_server_addr)
+hose_on_cmd = "activate_hose"
+print("sending command: "+hose_on_cmd+" to: "+target_addr[0]+":"+str(target_addr[1]))
+tx_skt.sendto(bytearray(hose_on_cmd,encoding="utf8"),target_addr)
 
 fpos = [15., 15., 15., 15., 15., -15.]																									
 try:
@@ -50,22 +56,27 @@ try:
 		fpos[5] = -fpos[5]
 		
 		msg = bytearray(farr_to_dposition(0x50, fpos, 1))
-		client_socket.sendto(msg, udp_server_addr)
-
+		tx_skt.sendto(msg, target_addr)
+		
+		time.sleep(.001)
+		
 		try:
-			pkt,addr = client_socket.recvfrom(bufsize)
+			pkt,addr = rx_skt.recvfrom(512)
 			if(len(pkt) != 0):
 				rPos,rI,rV,rFSR = parse_hand_data(pkt)		
 				tlen = rPos.size + rI.size + rV.size + rFSR.size
 				if(tlen != 0):
 					print(addr[0]+":"+str(addr[1])+" "+str(np.int16(rPos))+str(rI)+str(np.int16(rV))+str(rFSR))
-				else:
-					print(pkt.hex())
+				# else:
+					# print(pkt.hex())
 		except:	#ignore errors, cuz nonblocking read always throws an exception
 			pass
-		
-		time.sleep(.005)
+
 			
 except KeyboardInterrupt:
 	pass
 	
+	
+hose_on_cmd = "deactivate_hose"
+print("sending command: "+hose_on_cmd+" to: "+target_addr[0]+":"+str(target_addr[1]))
+tx_skt.sendto(bytearray(hose_on_cmd,encoding="utf8"),target_addr)

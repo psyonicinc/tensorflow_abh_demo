@@ -14,7 +14,7 @@ start_time = time.time()
 ylower = -2
 yupper = 2
 bufwidth = 200
-num_lines = 6
+num_lines = 30
 
 fig, ax = plt.subplots()
 ax.set_ylim(ylower,yupper)
@@ -103,7 +103,7 @@ def newframe():
 			fpos[5] = -fpos[5]
 			
 			msg = bytearray(farr_to_dposition(0x50, fpos, 1))
-			s1.sendto(msg, ('192.168.137.132',34345))
+			s1.sendto(msg, ('192.168.137.72',34345))
 
 			t = time.time()-start_time
 			d[0] = t		
@@ -117,7 +117,7 @@ def newframe():
 				tlen = rPos.size + rI.size + rV.size + rFSR.size
 				if(tlen != 0):
 					# print(str(np.int16(rPos))+str(rI)+str(np.int16(rV))+str(rFSR))
-					d[1:len(d)] = rPos
+					d[1:len(d)] = rFSR
 					yield d
 				# else:
 					# print(pkt)

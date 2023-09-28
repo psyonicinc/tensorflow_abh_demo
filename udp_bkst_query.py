@@ -1,6 +1,47 @@
 import time
 import socket
 
+
+def get_bkst_ip_from_usr():
+	hostname = socket.gethostname()
+	# addr=socket.gethostbyname(hostname)
+	hostname,aliaslist,addrlist=socket.gethostbyname_ex(hostname)
+
+	print("Select an IP to use from list with a number (0,1,2,...)\r\n"+str(addrlist))
+	usr_string_input = input()
+	usr_input = int(usr_string_input)
+	addr = addrlist[usr_input]
+	addr = addr.split('.')
+	addr[3] = '255'
+	addr = '.'.join(addr)
+	return addr
+
+"""
+	Make sure the bkst_ip has both ip addr and port
+"""
+def get_ip_of_targ(bkst_ip, tx_skt, rx_skt):
+	found = 0
+	start_time = time.time()
+	tx_skt.sendto(bytearray("marco",encoding='utf8'),bkst_ip)
+	addr = ''
+	while(time.time()-start_time < 3):
+		try:
+			pkt,addr = rx_skt.recvfrom(512)
+			if(len(pkt) > 0):
+				found = 1
+				break
+		except BlockingIOError:
+			pass
+	if(found):
+		return addr
+	else:
+		return ''
+	
+	
+
+"""
+kind of dumb function which interacts with locate_server_from_bkst_query
+"""
 def get_hostip_idx_from_usr():
 	hostname = socket.gethostname()
 	# addr=socket.gethostbyname(hostname)

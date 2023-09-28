@@ -74,22 +74,19 @@ def animate(unused):
 	global stuff_buffer
 	global data
 	
-	# fpos = np.zeros(num_lines)
 	
 	t = time.time() - start_time
 	data[0] = t
 	
-	
-	# for i in range(0, len(fpos)):
-		# ft = t*3 + i*(2*np.pi)/12
-		# fpos[i] = (.5*np.sin(ft)+.5)*45+15
-	# fpos[5] = -fpos[5]
-	
-	
-	# msg = farr_to_dposition(0x50, fpos, 1)
-	# slist[0].write(msg)
+	fpos = np.zeros(num_lines)
+	for i in range(0, len(fpos)):
+		ft = t*3 + i*(2*np.pi)/12
+		fpos[i] = (.5*np.sin(ft)+.5)*45+15
+	fpos[5] = -fpos[5]
+	msg = farr_to_dposition(0x50, fpos, 1)
+	slist[0].write(msg)
 
-	time.sleep(.01)
+	time.sleep(.001)
 
 	while(slist[0].in_waiting != 0):	#dump all the data
 		bytes = slist[0].read(1024)	#gigantic read size with nonblocking
