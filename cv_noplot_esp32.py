@@ -38,31 +38,28 @@ if __name__ == "__main__":
 	usr_idx = None
 	if(args.sel_ip):
 		usr_idx = get_hostip_idx_from_usr()
-		
+	
 	addrs = []
 	ports = [34345,23234]
-	#"left"
-	string_address, connected, host_ip = locate_server_from_bkst_query(ports[0],usr_idx)
-	print("piping commands to: "+str(string_address)+" on port: "+str(ports[0]))
-	udp_server_addr_tmp = (string_address,  ports[0])
-	if(connected):
-		addrs.append(udp_server_addr_tmp)
-		
-	#"right"
-	string_address,connected, host_ip = locate_server_from_bkst_query(ports[1],usr_idx)
-	print("piping commands to: "+str(string_address)+" on port: "+str(ports[1]))
-	udp_server_addr_tmp = (string_address,  ports[1])
-	if(connected):
-		addrs.append(udp_server_addr_tmp)
+	scanport = 7134
+	bkst_ip = get_bkst_ip_from_usr()
+	for port in ports:
+		targ_addr = scan_split_streams( (bkst_ip,port), 1, port, 7134)	#use a random port to scan with, which avoids collisions with any plotting software that might be monitoring the RX port/split traffic
+		if(targ_addr != ''):
+			addrs.append(targ_addr)
+	
+	for addr in addrs:
+		print("Found: "+addr[0]+":"+str(addr[1]))
 	
 	#number of hands
 	n = len(addrs)
 	
+	our_port_to_bind_to = [1435,1437]	#configure both as +1, 1435 is us so receiver is 1436, 1437 is us so receiver is 1438
 	client_sockets = []
 	for i in range(0,n):
 		client_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 		client_socket.settimeout(0)
-		bindip = (host_ip,ports[i])
+		bindip = ('0.0.0.0', our_port_to_bind_to[i])
 		print("binding socket "+str(i)+" to "+bindip[0]+":"+str(bindip[1]))
 		client_socket.bind(bindip)
 		client_sockets.append(client_socket)

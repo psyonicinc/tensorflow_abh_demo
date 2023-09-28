@@ -35,6 +35,7 @@ if(target_addr != ''):
 else:
 	target_addr = bkst_ip
 
+rx_skt.close()	#IMPORTANT: unbind the receiver so the receiver process can successfully bind to that port
 
 #note: if PPP stuffing is activated on the hand, this is likely unnecessary
 hose_on_cmd = "activate_hose"
@@ -60,18 +61,6 @@ try:
 		
 		time.sleep(.001)
 		
-		try:
-			pkt,addr = rx_skt.recvfrom(512)
-			if(len(pkt) != 0):
-				rPos,rI,rV,rFSR = parse_hand_data(pkt)		
-				tlen = rPos.size + rI.size + rV.size + rFSR.size
-				if(tlen != 0):
-					print(addr[0]+":"+str(addr[1])+" "+str(np.int16(rPos))+str(rI)+str(np.int16(rV))+str(rFSR))
-				# else:
-					# print(pkt.hex())
-		except:	#ignore errors, cuz nonblocking read always throws an exception
-			pass
-
 			
 except KeyboardInterrupt:
 	pass

@@ -1,6 +1,26 @@
 import time
 import socket
 
+def scan_split_streams(bkst_ip, offset, target_port, bind_port):
+	tx_skt = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+	tx_skt.settimeout(0)
+	tx_skt.bind(('0.0.0.0',bind_port))
+	
+	rx_skt = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+	rx_skt.settimeout(0)
+	if(offset != 0):
+		bindaddr = ('0.0.0.0', (bind_port+offset))
+		rx_skt.bind( bindaddr )	#bind to a new socket where the split stream destination will go
+	else:
+		rx_skt = tx_skt
+	
+	target_addr = get_ip_of_targ(bkst_ip, tx_skt, rx_skt)
+
+	tx_skt.close()
+	rx_skt.close()
+	return target_addr
+	
+
 
 def get_bkst_ip_from_usr():
 	hostname = socket.gethostname()
