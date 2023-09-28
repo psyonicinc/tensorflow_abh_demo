@@ -125,6 +125,8 @@ if __name__ == "__main__":
 				abhlist.append(abh)
 			
 			send_upsampling_msg_ts = 0
+			
+			barr = np.uint8(np.zeros(15)).tobytes()
 			while cap.isOpened():
 			
 				ts = cv2.getTickCount()
@@ -170,7 +172,6 @@ if __name__ == "__main__":
 						#if port:
 						
 						# Write the finger array out over UART to the hand!
-						# msg = farr_to_barr(0x50, abhlist[ser_idx].fpos)
 						msg = farr_to_dposition(0x50, np.float32(abhlist[ser_idx].fpos), 1)
 						barr = bytearray(msg)
 						
@@ -220,7 +221,10 @@ if __name__ == "__main__":
 							[],
 							mp_drawing_styles.get_default_hand_landmarks_style(),
 							mp_drawing_styles.get_default_hand_connections_style())
-				
+				else:
+					for i in range(0,len(client_sockets)):	#continue sending the last data frame out, even if the hand is out of frame
+						client_sockets[i].sendto(barr, addrs[i])
+
 					
 				# Flip the image horizontally for a selfie-view display.
 				cv2.namedWindow('MediaPipe Hands', cv2.WINDOW_FREERATIO)
@@ -236,8 +240,8 @@ if __name__ == "__main__":
 					for i in range(0,n):
 						msg = create_misc_msg(0x50, 0xC2)
 						print("sending: ", [ hex(b) for b in msg ], "to ser device ", i)
-						barr = bytearray(msg)
-						client_sockets[i].sendto(barr, addrs[i])
+						filter_msg = bytearray(msg)
+						client_sockets[i].sendto(filter_msg, addrs[i])
 						# slist[i].write(msg)
 
 

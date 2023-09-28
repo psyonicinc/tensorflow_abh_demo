@@ -95,6 +95,8 @@ def farr_to_dposition(addr, farr, tx_option):
 
 	for fp in farr:
 		fscaled = fp * 32767 / 150
+		lim = 32767
+		fscaled = max(min(fscaled,lim),-lim)
 		b2 = struct.pack('<h', int(fscaled))
 		for b in b2:
 			barr.append(b)
