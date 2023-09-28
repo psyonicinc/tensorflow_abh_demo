@@ -8,6 +8,13 @@ import struct
 import threading
 from abh_get_fpos import *
 from abh_api_core import *
+import argparse
+
+
+parser = argparse.ArgumentParser(description='Hand CV Demo Parser')
+parser.add_argument('--bind_port', type=int, help="Port for the software to bind to", default=-1)
+args = parser.parse_args()
+
 
 start_time = time.time()
 
@@ -26,14 +33,18 @@ for i in range(num_lines):
 xbuf = np.zeros(bufwidth)
 ybuf = np.zeros((num_lines, bufwidth))
 
-port = input("What port are we gonna bind to?: ")
-port = int(port)
-print("Binding to"+str(port))
 soc = socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
 soc.settimeout(0)
-soc.bind(('0.0.0.0',port))
-
+if(args.bind_port == -1):
+	port = input("What port are we gonna bind to?: ")
+	port = int(port)
+	print("Binding to port: "+str(port))
+	soc.bind(('0.0.0.0',port))
+else:
+	print("Binding to port: "+str(args.bind_port))
+	soc.bind(('0.0.0.0',args.bind_port))
 	
+
 def animate(data):
 	global xbuf
 	global ybuf
