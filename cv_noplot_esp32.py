@@ -26,6 +26,7 @@ if __name__ == "__main__":
 	parser.add_argument('--no_hose',help="refrain from sending hose activation command",action='store_true')
 	parser.add_argument('--sel_ip',help="manually select desired LAN IP if multiple network adapters are present",action='store_true')
 	parser.add_argument('--parse_reply',help="activate reply parsing",action='store_true')
+	parser.add_argument('--loopback',help="flag to indicate looping back all udp traffic",action='store_true')
 	args = parser.parse_args()
 	
 	use_grip_cmds = args.do_grip_cmds
@@ -41,13 +42,16 @@ if __name__ == "__main__":
 	
 	addrs = []
 	ports = [34345,23234]
-	scanport = 7134
-	bkst_ip = get_bkst_ip_from_usr()
-	for port in ports:
-		targ_addr = scan_split_streams( (bkst_ip,port), 1, port, 7134)	#use a random port to scan with, which avoids collisions with any plotting software that might be monitoring the RX port/split traffic
-		if(targ_addr != ''):
-			addrs.append(targ_addr)
-	
+	if(args.loopback == False):
+		scanport = 7134
+		bkst_ip = get_bkst_ip_from_usr()
+		for port in ports:
+			targ_addr = scan_split_streams( (bkst_ip,port), 1, port, 7134)	#use a random port to scan with, which avoids collisions with any plotting software that might be monitoring the RX port/split traffic
+			if(targ_addr != ''):
+				addrs.append(targ_addr)
+	else:
+		addrs = [('127.0.0.1',ports[0]),('127.0.0.1',ports[1])]	#hardload addrs in case of loopback request
+		
 	for addr in addrs:
 		print("Found: "+addr[0]+":"+str(addr[1]))
 	
@@ -63,7 +67,7 @@ if __name__ == "__main__":
 		print("binding socket "+str(i)+" to "+bindip[0]+":"+str(bindip[1]))
 		client_socket.bind(bindip)
 		client_sockets.append(client_socket)
-		
+	
 	
 	print("using "+str(len(addrs))+" sockets:")
 	for a in addrs:
