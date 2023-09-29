@@ -5,6 +5,7 @@ def scan_split_streams(bkst_ip, offset, target_port, bind_port):
 	tx_skt = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 	tx_skt.settimeout(0)
 	tx_skt.bind(('0.0.0.0',bind_port))
+	tx_skt.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
 	
 	rx_skt = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 	rx_skt.settimeout(0)
