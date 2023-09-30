@@ -40,6 +40,10 @@ if __name__ == "__main__":
 	if(args.sel_ip):
 		usr_idx = get_hostip_idx_from_usr()
 	
+	
+	"""
+		Obtain addresses of the ESP32 UART forwarding devices via broadcast-reply method
+	"""
 	addrs = []
 	ports = [34345,23234]
 	if(args.loopback == False):
@@ -58,6 +62,10 @@ if __name__ == "__main__":
 	#number of hands
 	n = len(addrs)
 	
+	"""
+		Create sockets to use for transmistting to the ESP32s. bind to a different set of ports. Important to ensure they aren't +1, because
+		configuration of the ESP32's in the hands should be +1 port offset for split port configuration
+	"""
 	our_port_to_bind_to = [1435,1437]	#configure both as +1, 1435 is us so receiver is 1436, 1437 is us so receiver is 1438
 	client_sockets = []
 	for i in range(0,n):
@@ -67,6 +75,20 @@ if __name__ == "__main__":
 		print("binding socket "+str(i)+" to "+bindip[0]+":"+str(bindip[1]))
 		client_socket.bind(bindip)
 		client_sockets.append(client_socket)
+	
+	
+	
+	
+	lhpos_soc = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+	lhpos_soc.settimeout(0)
+	lhpos_soc.bind(('127.0.0.1', 7239))	#bind to random ass port
+	rhpos_soc = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+	rhpos_soc.settimeout(0)
+	rhpos_soc.bind(('127.0.0.1', 7241))	#bind to random ass port
+	hpsoc = []
+	hpsoc.append(lhpos_soc)
+	hpsoc.append(rhpos_soc)
+	hps_targs = [('127.0.0.1', 7240), ('127.0.0.1', 7242)]
 	
 	
 	print("using "+str(len(addrs))+" sockets:")
@@ -179,7 +201,17 @@ if __name__ == "__main__":
 						msg = farr_to_dposition(0x50, np.float32(abhlist[ser_idx].fpos), 1)
 						barr = bytearray(msg)
 						
-
+						txbuf = bytearray([])
+						for r in range(0,4):
+							for c in range(0,4):
+								fv = abhlist[ser_idx].hw_b[r][c]
+								bv = struct.pack('<f', fv)
+								txbuf = txbuf + bv
+						# print(len(txbuf))
+						hpsoc[ser_idx].sendto(txbuf, hps_targs[ser_idx])
+						
+						
+							
 		
 						#loopback. Server (subscriber) expectes straight up floating point with a 32 bit checksum. checksum eval not required
 						# dgram = bytearray(udp_pkt(abhlist[0].fpos))	#publish only 1 hand at a time in this context. 
@@ -226,8 +258,9 @@ if __name__ == "__main__":
 							mp_drawing_styles.get_default_hand_landmarks_style(),
 							mp_drawing_styles.get_default_hand_connections_style())
 				else:
-					for i in range(0,len(client_sockets)):	#continue sending the last data frame out, even if the hand is out of frame
-						client_sockets[i].sendto(barr, addrs[i])
+					if(args.loopback == False):
+						for i in range(0,len(client_sockets)):	#continue sending the last data frame out, even if the hand is out of frame
+							client_sockets[i].sendto(barr, addrs[i])
 
 					
 				# Flip the image horizontally for a selfie-view display.
@@ -239,14 +272,15 @@ if __name__ == "__main__":
 					break
 
 				t_seconds = ts/cv2.getTickFrequency()
-				if(t_seconds > send_upsampling_msg_ts):
-					send_upsampling_msg_ts = t_seconds + 10
-					for i in range(0,n):
-						msg = create_misc_msg(0x50, 0xC2)
-						print("sending: ", [ hex(b) for b in msg ], "to ser device ", i)
-						filter_msg = bytearray(msg)
-						client_sockets[i].sendto(filter_msg, addrs[i])
-						# slist[i].write(msg)
+				if(args.loopback == False):
+					if(t_seconds > send_upsampling_msg_ts):
+						send_upsampling_msg_ts = t_seconds + 10
+						for i in range(0,n):
+							msg = create_misc_msg(0x50, 0xC2)
+							print("sending: ", [ hex(b) for b in msg ], "to ser device ", i)
+							filter_msg = bytearray(msg)
+							client_sockets[i].sendto(filter_msg, addrs[i])
+							# slist[i].write(msg)
 
 
 				fpsfilt, warr_fps = py_sos_iir(fps, warr_fps, lpf_fps_sos[0])
