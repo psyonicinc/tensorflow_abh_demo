@@ -52,6 +52,36 @@ def ht_rotx(ang):
 		[0, 0, 0, 1]])
 	return h
 
+
+"""
+	Returns a 4x4 homogeneous transformation matrix
+	which is the principle rotation about the Z axis by the
+	angle 'ang' (in radians).
+"""	
+def ht_rotz(ang):
+	cth = np.cos(ang)
+	sth = np.sin(ang)
+	h = np.array([ [cth, -sth, 0, 0],
+		[sth, cth, 0, 0],
+		[0, 0, 1, 0],
+		[0, 0, 0, 1]])
+	return h
+
+"""
+	Returns a 4x4 homogeneous transformation matrix
+	which is the principle rotation about the Y axis by the
+	angle 'ang' (in radians).
+"""	
+def ht_roty(ang):
+	cth = np.cos(ang)
+	sth = np.sin(ang)
+	h = np.array([ [cth, 0, sth, 0],
+		[0, 1, 0, 0],
+		[-sth, 0, cth, 0],
+		[0, 0, 0, 1]])
+	return h
+
+
 def ht_from_2_vectors(vx, vyref, origin):
 	ret = np.zeros((4,4))
 	
@@ -65,6 +95,28 @@ def ht_from_2_vectors(vx, vyref, origin):
 	ret[0:3, 3] = origin
 	ret[3, 0:4] = np.array([0,0,0,1])
 	return ret
+
+"""
+	get xyz/rpy from a 4x4 homogeneous transformation matrix
+"""
+def get_xyz_rpy(R):
+	yaw = np.arctan2(R[1][0],R[0][0])
+	pitch = np.arctan2( -R[2][0], np.sqrt(R[2][1]**2+R[2][2]**2))
+	roll = np.arctan2(R[2][1],R[2][2])
+	rpy = np.array([roll,pitch,yaw])
+	xyz = R[0:3,3]
+	return xyz, rpy
+
+"""
+	get 4x4 homogeneous transformation matrix from xyz/rpy
+"""
+def get_ht4x4_from_xyz_rpy(xyz, rpy):
+	Hyaw = ht_rotz(rpy[2])
+	Hpitch = ht_roty(rpy[1])
+	Hroll = ht_rotx(rpy[0])
+	H = Hyaw.dot(Hpitch.dot(Hroll))
+	H[0:3,3] = xyz
+	return H
 
 """
 	restrict val to lowerlim-upperlim

@@ -207,7 +207,9 @@ if __name__ == "__main__":
 								fv = abhlist[ser_idx].hw_b[r][c]
 								bv = struct.pack('<f', fv)
 								txbuf = txbuf + bv
-						# print(len(txbuf))
+						# print("hpos: "+str(abhlist[ser_idx].hw_b[0][3])+", "+str(abhlist[ser_idx].hw_b[1][3])+", "+str(abhlist[ser_idx].hw_b[2][3]))
+						# xyz,rpy = get_xyz_rpy(abhlist[ser_idx].hw_b[0:3][0:3])
+						# print("rpy= "+str(rpy[0])+", "+str(rpy[1])+", "+str(rpy[2]))
 						hpsoc[ser_idx].sendto(txbuf, hps_targs[ser_idx])
 						
 						
