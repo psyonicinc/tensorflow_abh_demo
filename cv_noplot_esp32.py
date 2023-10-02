@@ -194,7 +194,7 @@ if __name__ == "__main__":
 						#args.no_pinch_lock
 						
 						#fpos, warr, hw_b, hb_w, handed_sign, scale, dist_to_thumb = get_fpos(results, mp_hands, fpos, warr)
-						abhlist[ser_idx].update(mp_hands, results.multi_hand_landmarks[idx].landmark, ser_idx)
+						abhlist[ser_idx].update(mp_hands, results.multi_hand_landmarks[idx].landmark, results.multi_handedness[idx].classification[0].index)
 						#if port:
 						
 						# Write the finger array out over UART to the hand!
