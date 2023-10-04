@@ -151,6 +151,7 @@ if __name__ == "__main__":
 				abhlist.append(abh)
 			
 			send_upsampling_msg_ts = 0
+			send_hose_ts = 0
 			
 			barr = np.uint8(np.zeros(15)).tobytes()
 			while cap.isOpened():
@@ -178,8 +179,15 @@ if __name__ == "__main__":
 
 				# Draw the hand annotations on the image.
 				image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
-
 				
+				t_seconds = ts/cv2.getTickFrequency()
+
+				if (t_seconds > send_hose_ts):
+					send_hose_ts = t_seconds + 5
+					print("hose")
+					hose_on_cmd = "activate_hose"
+					client_sockets[i].sendto(bytearray(hose_on_cmd,encoding='utf8'), addrs[i])
+
 				if results.multi_hand_landmarks:
 					
 					num_writes = 1
@@ -273,7 +281,6 @@ if __name__ == "__main__":
 				if cv2.waitKey(1) & 0xFF == 27:
 					break
 
-				t_seconds = ts/cv2.getTickFrequency()
 				if(args.loopback == False):
 					if(t_seconds > send_upsampling_msg_ts):
 						send_upsampling_msg_ts = t_seconds + 10
