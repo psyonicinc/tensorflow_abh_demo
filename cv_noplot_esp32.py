@@ -215,9 +215,10 @@ if __name__ == "__main__":
 								fv = abhlist[ser_idx].hw_b[r][c]
 								bv = struct.pack('<f', fv)
 								txbuf = txbuf + bv
+						# print(txbuf.hex())
 						# print("hpos: "+str(abhlist[ser_idx].hw_b[0][3])+", "+str(abhlist[ser_idx].hw_b[1][3])+", "+str(abhlist[ser_idx].hw_b[2][3]))
-						# xyz,rpy = get_xyz_rpy(abhlist[ser_idx].hw_b[0:3][0:3])
-						# print("rpy= "+str(rpy[0])+", "+str(rpy[1])+", "+str(rpy[2]))
+						xyz,rpy = get_xyz_rpy(abhlist[ser_idx].hw_b[0:3][0:3])
+						print("rpy= "+str(rpy[0])+", "+str(rpy[1])+", "+str(rpy[2]))
 						hpsoc[ser_idx].sendto(txbuf, hps_targs[ser_idx])
 						
 						
@@ -227,6 +228,8 @@ if __name__ == "__main__":
 						# dgram = bytearray(udp_pkt(abhlist[0].fpos))	#publish only 1 hand at a time in this context. 
 						# print("sending ", dgram)
 						client_sockets[ser_idx].sendto(barr, addrs[ser_idx])
+						if(args.loopback == False):
+							client_sockets[ser_idx].sendto(barr, ('127.0.0.1', addrs[ser_idx][1]))
 
 						if(args.parse_reply):
 							try:
