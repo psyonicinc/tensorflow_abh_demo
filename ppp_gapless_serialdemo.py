@@ -76,7 +76,7 @@ try:
 		
 		time.sleep(.001)	#this delay is optional when PPP stuffing is used. Its absense may cause windows to BSOD, however, due to bad CP2102 drivers that don't guard against memory overrun.
 		
-		while(slist[0].in_waiting != 0):	#dump all the data
+		while(slist[0].in_waiting != 0):	#dump all the data available, if there is any. The while is OPTIONAL
 			bytes = slist[0].read(512)	#gigantic read size with nonblocking
 			if(len(bytes) != 0): #redundant, but fine to keep
 				npbytes = np.frombuffer(bytes, np.uint8)
