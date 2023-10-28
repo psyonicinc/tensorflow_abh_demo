@@ -36,6 +36,17 @@ for p in port:
 print( "found ", len(slist), "ports.")
 		
 		
+def m_print_nparr(arr):
+	print('[',end='')
+	for i, val in enumerate( arr ):
+		if(i < len(arr) -1):
+			strv = "{:3.2f}".format(val)
+			print(str(val) + str(','), end='')
+		else:
+			print(str(val), end='')
+	print(']',end='')
+
+		
 
 # for s in slist:
 	# buf = create_misc_msg(0x50, 0xC2) # cmd to enable upsampling of the thumb rotator
@@ -63,24 +74,32 @@ try:
 		slist[0].write(PPP_stuff(bytearray(msg)))
 		# slist[0].write(msg)
 		
-		time.sleep(.001)	#this is necessary because the hand needs IDLE time before issuing a reply
+		time.sleep(.001)	#this delay is optional when PPP stuffing is used. Its absense may cause windows to BSOD, however, due to bad CP2102 drivers that don't guard against memory overrun.
 		
 		while(slist[0].in_waiting != 0):	#dump all the data
 			bytes = slist[0].read(512)	#gigantic read size with nonblocking
 			if(len(bytes) != 0): #redundant, but fine to keep
 				npbytes = np.frombuffer(bytes, np.uint8)
-				# npbytes = np.append(npbytes, np.uint8(0))
-				# npbytes = np.insert(npbytes, 0, 0)
-				# print(npbytes.tobytes().hex())
 				for b in npbytes:
 					payload, stuff_buffer = unstuff_PPP_stream(b,stuff_buffer)
 					if(len(payload) != 0):
 						rPos,rI,rV,rFSR = parse_hand_data(payload)
 						if( (rPos.size + rI.size + rV.size + rFSR.size) != 0):
-							pass
-							# slist[0].write(bytearray('match',encoding='utf8'))
-							# print("Pass, "+str(len(payload)))
-							# print(str(np.int16(rPos))+str(rI)+str(np.int16(rV))+str(rFSR))
+							"""If the parser got something, print it out. This is blocking, time consuming, and execution time is not guaranteed, but it is guaranteed to reduce average bandwidth"""
+							print("deg=",end='')
+							m_print_nparr(np.int16(rPos))	#cast to int to just show finger position to the 'nearest' (floored) degree
+							# if(len(rI) != 0):
+								# print(", amps=",end='')
+								# m_print_nparr(rI)
+							# if(len(rV) != 0):
+								# print(", rad/sec=",end='')
+								# m_print_nparr(rV)
+							if(len(rFSR) != 0):
+								print(", bin=",end='')
+								m_print_nparr(rFSR)
+							print('')
+							
+							
 						else:	
 							print("Fail, "+str(len(payload)))
 
