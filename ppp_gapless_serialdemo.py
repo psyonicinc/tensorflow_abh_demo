@@ -5,9 +5,7 @@ import math
 import time
 import numpy as np
 from PPP_stuffing import *
-import binascii
 
-#ser = serial.Serial('COM4','460800', timeout = 1)
 """ 
 	Find a serial com port.
 """
