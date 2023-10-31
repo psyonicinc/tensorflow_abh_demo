@@ -183,6 +183,7 @@ class SerialDisplayer:
             Transition = True
             show_webcam = False
             wave_hand = True
+            Relax_H = False
             transition_count = 100
 
             fpos = [15., 15., 15., 15., 15., -15.]	# for the slow hand wave
@@ -221,6 +222,7 @@ class SerialDisplayer:
                     """
                     mediapipe hand detection
                     """
+                    Relax_H = False
                     if cap.isOpened():
                         ts = cv2.getTickCount()
                         tdif = ts - tprev
@@ -319,9 +321,12 @@ class SerialDisplayer:
          
                 else:
                     if (wave_hand):
+                        Relax_H = False
                         self.wave_hand(fpos)
                     else:
-                        self.relax_hand(fpos)
+                        if(Relax_H == False):
+                            self.relax_hand(fpos)
+                            Relax_H = True
 
                     image = self.screen_saver
 
