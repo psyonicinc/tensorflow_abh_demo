@@ -124,6 +124,22 @@ class SerialDisplayer:
             except:
                 pass 
 
+    def relax_hand(self,fpos):
+        """helper function to run handwave"""
+        for serial in self.slist:
+            try:
+                for i in range(len(fpos)):
+                    ft = time.time()*1.25 + i*(2*np.pi)/12
+                    fpos[i] = 0
+                
+
+                msg = farr_to_barr(0x50, fpos)
+                serial.write(msg)        
+
+            except:
+                pass 
+        
+
     def run(self):
         """main loop that runs"""
 
@@ -164,7 +180,7 @@ class SerialDisplayer:
 
             send_unsampling_msg_ts = 0
 
-            First_Time_run = True
+            Transition = True
             show_webcam = False
             wave_hand = True
             transition_count = 100
@@ -177,19 +193,21 @@ class SerialDisplayer:
                     data_char = set(self.input_listener.read(self.input_listener.inWaiting()).decode('ascii')) # get our input
                     
                     if 'A' in data_char:
-                        show_webcam = True
-                        transition_count = 0
-                        if(First_Time_run):
-                            First_Time_run = False
-
-                    elif 'X' in data_char:
-                        if(First_Time_run):
+                        if(Transition):                            
                             show_webcam = True
-                            First_Time_run = False
                         else:
                             show_webcam = False
 
-                        
+                        Transition =not Transition
+                        transition_count = 0
+
+                    elif 'X' in data_char:
+                        if(Transition):                            
+                            show_webcam = True
+                        else:
+                            show_webcam = False
+
+                        Transition =not Transition
                         transition_count = 0
 
 
@@ -302,6 +320,8 @@ class SerialDisplayer:
                 else:
                     if (wave_hand):
                         self.wave_hand(fpos)
+                    else:
+                        self.relax_hand(fpos)
 
                     image = self.screen_saver
 
