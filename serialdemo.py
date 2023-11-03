@@ -74,7 +74,7 @@ try:
 						print(str(np.int16(rPos))+str(rI)+str(np.int16(rV))+str(rFSR))
 
 						if( (rPos.size + rI.size + rV.size + rFSR.size) == 0):
-							print("got a bad one")							
+							print("error parsing hand reply")							
 						#Optional: Dump any remaining data
 						# while(slist[0].in_waiting != 0):	
 							# bytes = slist[0].read(1024)
