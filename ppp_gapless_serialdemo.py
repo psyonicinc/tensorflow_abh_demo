@@ -74,32 +74,32 @@ try:
 		
 		time.sleep(.001)	#this delay is optional when PPP stuffing is used. Its absense may cause windows to BSOD, however, due to bad CP2102 drivers that don't guard against memory overrun.
 		
-		while(slist[0].in_waiting != 0):	#dump all the data available, if there is any. The while is OPTIONAL
-			bytes = slist[0].read(512)	#gigantic read size with nonblocking
-			if(len(bytes) != 0): #redundant, but fine to keep
-				npbytes = np.frombuffer(bytes, np.uint8)
-				for b in npbytes:
-					payload, stuff_buffer = unstuff_PPP_stream(b,stuff_buffer)
-					if(len(payload) != 0):
-						rPos,rI,rV,rFSR = parse_hand_data(payload)
-						if( (rPos.size + rI.size + rV.size + rFSR.size) != 0):
-							"""If the parser got something, print it out. This is blocking, time consuming, and execution time is not guaranteed, but it is guaranteed to reduce average bandwidth"""
-							print("deg=",end='')
-							m_print_nparr(np.int16(rPos))	#cast to int to just show finger position to the 'nearest' (floored) degree
-							# if(len(rI) != 0):
-								# print(", amps=",end='')
-								# m_print_nparr(rI)
-							# if(len(rV) != 0):
-								# print(", rad/sec=",end='')
-								# m_print_nparr(rV)
-							if(len(rFSR) != 0):
-								print(", bin=",end='')
-								m_print_nparr(rFSR)
-							print('')
-							
-							
-						else:	
-							print("Fail, "+str(len(payload)))
+		# while(slist[0].in_waiting != 0):	#dump all the data available, if there is any. The while is OPTIONAL
+		bytes = slist[0].read(512)	#gigantic read size with nonblocking
+		if(len(bytes) != 0): #redundant, but fine to keep
+			npbytes = np.frombuffer(bytes, np.uint8)
+			for b in npbytes:
+				payload, stuff_buffer = unstuff_PPP_stream(b,stuff_buffer)
+				if(len(payload) != 0):
+					rPos,rI,rV,rFSR = parse_hand_data(payload)
+					if( (rPos.size + rI.size + rV.size + rFSR.size) != 0):
+						"""If the parser got something, print it out. This is blocking, time consuming, and execution time is not guaranteed, but it is guaranteed to reduce average bandwidth"""
+						print("deg=",end='')
+						m_print_nparr(np.int16(rPos))	#cast to int to just show finger position to the 'nearest' (floored) degree
+						# if(len(rI) != 0):
+							# print(", amps=",end='')
+							# m_print_nparr(rI)
+						# if(len(rV) != 0):
+							# print(", rad/sec=",end='')
+							# m_print_nparr(rV)
+						if(len(rFSR) != 0):
+							print(", bin=",end='')
+							m_print_nparr(rFSR)
+						print('')
+						
+					else:	
+						# print("Fail, "+str(len(payload)))
+						print("Fail: " + str(payload))
 
 		
 		
