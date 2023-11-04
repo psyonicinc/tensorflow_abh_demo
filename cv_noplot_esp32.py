@@ -218,7 +218,8 @@ if __name__ == "__main__":
 						# print(txbuf.hex())
 						# print("hpos: "+str(abhlist[ser_idx].hw_b[0][3])+", "+str(abhlist[ser_idx].hw_b[1][3])+", "+str(abhlist[ser_idx].hw_b[2][3]))
 						xyz,rpy = get_xyz_rpy(abhlist[ser_idx].hw_b[0:3][0:3])
-						print("rpy= "+str(rpy[0])+", "+str(rpy[1])+", "+str(rpy[2]))
+						# print("rpy= "+str(rpy[0])+", "+str(rpy[1])+", "+str(rpy[2]))
+						# print("xyz= "+str(xyz[0])+", "+str(xyz[1])+", "+str(xyz[2]))
 						hpsoc[ser_idx].sendto(txbuf, hps_targs[ser_idx])
 						
 						

@@ -11,6 +11,7 @@ def ht_inverse(hin):
     hout = np.zeros((4,4))
     hout[0:3, 0:3] = np.transpose(hin[0:3,0:3])
     hout[0:3, 3] = -np.dot(hout[0:3,0:3], hin[0:3,3])
+    hout[3,0:4] = np.array([0,0,0,1])
     return hout
 
 """

@@ -59,6 +59,8 @@ class AbilityHandBridge:
 		self.hb_w = np.zeros((4,4))
 		self.hb_ip = np.zeros((4,4))
 		self.hip_b = np.zeros((4,4))
+
+		self.hw_b_for_arm = np.zeros((4,4))
 		
 		self.handed_sign = 1
 		self.scale = 1
@@ -110,7 +112,7 @@ class AbilityHandBridge:
 
 		#obtain hw_b and hb_w
 		self.hw_b = np.zeros((4,4))
-		vx = np.subtract(index_mcp, base)
+		vx = np.subtract(middle_mcp, base)
 		vx = vx/mag(vx)
 		vyref = np.subtract(pinky_mcp,base)
 		vyref = vyref/mag(vyref)
@@ -125,6 +127,32 @@ class AbilityHandBridge:
 		self.hw_b[3, 0:4] = np.array([0,0,0,1])
 		self.hb_w = ht_inverse(self.hw_b)
 
+
+		#try this a little different method
+		vup = middle_mcp - base
+		z1_yaxis_rotation = -np.arctan2(vup[1], -vup[0])	#rotation around Z1 Y axis!
+		#vup = x
+		virtual_x = vup / np.linalg.norm(vup)
+		virtual_z = np.array([0,0,1])
+		virtual_y = np.cross(virtual_z, virtual_x)
+		virtual_y = virtual_y / np.linalg.norm(virtual_y)
+		virtual_z = np.cross(virtual_x, virtual_y)
+		virtual_z = np.linalg.norm(virtual_z)
+		z1_hw_b = np.zeros((4,4))
+		z1_hw_b[0:3,0]=virtual_x
+		z1_hw_b[0:3,1]=virtual_y
+		z1_hw_b[0:3,2]=virtual_z
+		z1_hw_b[0:3,3]=base
+		z1_hw_b[3,0:4] = np.array([0,0,0,1])
+		z1_hb_w = ht_inverse(z1_hw_b)
+		idx_mcp_b = z1_hb_w.dot(v3_to_v4(index_mcp))
+		pnky_mcp_b = z1_hb_w.dot(v3_to_v4(pinky_mcp))
+		ang1 = np.arctan2(idx_mcp_b[2],idx_mcp_b[1])
+		ang2 = np.arctan2(pnky_mcp_b[2],pnky_mcp_b[1])
+		self.hw_b_for_arm = get_ht4x4_from_xyz_rpy(base, np.array([0,z1_yaxis_rotation,0]) )
+
+		# print(np.linalg.norm(virtual_x) + np.linalg.norm(virtual_y) + np.linalg.norm(virtual_z) )
+		# self.hw_b_for_arm
 
 		#compute all thumb vectors (to base)
 		thumb_tip_b = self.hb_w.dot(v3_to_v4(thumb_tip))/self.scale		
