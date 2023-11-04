@@ -61,6 +61,7 @@ class AbilityHandBridge:
 		self.hip_b = np.zeros((4,4))
 
 		self.hw_b_for_arm = np.zeros((4,4))
+		self.z1_rpy = np.zeros(3)
 		
 		self.handed_sign = 1
 		self.scale = 1
@@ -130,7 +131,7 @@ class AbilityHandBridge:
 
 		#try this a little different method
 		vup = middle_mcp - base
-		z1_yaxis_rotation = -np.arctan2(vup[1], -vup[0])	#rotation around Z1 Y axis!
+		z1_zaxis_rotation = -np.arctan2(vup[1], -vup[0])	#rotation around Z1 Y axis!
 		#vup = x
 		virtual_x = vup / np.linalg.norm(vup)
 		virtual_z = np.array([0,0,1])
@@ -149,8 +150,7 @@ class AbilityHandBridge:
 		pnky_mcp_b = z1_hb_w.dot(v3_to_v4(pinky_mcp))
 		ang1 = np.arctan2(idx_mcp_b[2],idx_mcp_b[1])
 		ang2 = np.arctan2(pnky_mcp_b[2],pnky_mcp_b[1])
-		self.hw_b_for_arm = get_ht4x4_from_xyz_rpy(base, np.array([0,z1_yaxis_rotation,0]) )
-
+		self.z1_rpy[2] = z1_zaxis_rotation
 		# print(np.linalg.norm(virtual_x) + np.linalg.norm(virtual_y) + np.linalg.norm(virtual_z) )
 		# self.hw_b_for_arm
 

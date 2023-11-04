@@ -210,11 +210,14 @@ if __name__ == "__main__":
 						barr = bytearray(msg)
 						
 						txbuf = bytearray([])
-						for r in range(0,4):
-							for c in range(0,4):
-								fv = abhlist[ser_idx].hw_b[r][c]
-								bv = struct.pack('<f', fv)
-								txbuf = txbuf + bv
+						# for r in range(0,4):
+						# 	for c in range(0,4):
+						# 		fv = abhlist[ser_idx].hw_b_for_arm[r][c]
+						# 		bv = struct.pack('<f', fv)
+						# 		txbuf = txbuf + bv
+						for r in range(0,3):
+							bv=struct.pack('<f',abhlist[ser_idx].z1_rpy[r])
+							txbuf = txbuf + bv
 						# print(txbuf.hex())
 						# print("hpos: "+str(abhlist[ser_idx].hw_b[0][3])+", "+str(abhlist[ser_idx].hw_b[1][3])+", "+str(abhlist[ser_idx].hw_b[2][3]))
 						xyz,rpy = get_xyz_rpy(abhlist[ser_idx].hw_b[0:3][0:3])
