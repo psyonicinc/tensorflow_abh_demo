@@ -188,7 +188,7 @@ if __name__ == "__main__":
 							# Write the finger array out over UART to the hand!
 							msg = farr_to_barr(0x50, abhlist[idx].fpos)
 							if(args.stuff):
-								msg = PPP_stuff(msg)
+								msg = PPP_stuff(bytearray(msg))
 						
 						slist[ser_idx].write(msg)
 
