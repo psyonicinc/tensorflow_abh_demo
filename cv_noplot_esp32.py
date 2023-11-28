@@ -15,6 +15,7 @@ from abh_get_fpos import *
 import argparse
 import socket
 from udp_bkst_query import *
+from PPP_stuffing import *
 
 if __name__ == "__main__":
 		
@@ -27,6 +28,9 @@ if __name__ == "__main__":
 	parser.add_argument('--sel_ip',help="manually select desired LAN IP if multiple network adapters are present",action='store_true')
 	parser.add_argument('--parse_reply',help="activate reply parsing",action='store_true')
 	parser.add_argument('--loopback',help="flag to indicate looping back all udp traffic",action='store_true')
+	parser.add_argument('--stuff', help="byte stuff outgoing data", action='store_true')
+	parser.add_argument('--showfps', help="enable fps printing", action='store_true')
+
 	args = parser.parse_args()
 	
 	use_grip_cmds = args.do_grip_cmds
@@ -207,7 +211,10 @@ if __name__ == "__main__":
 						
 						# Write the finger array out over UART to the hand!
 						msg = farr_to_dposition(0x50, np.float32(abhlist[ser_idx].fpos), 1)
-						barr = bytearray(msg)
+						if(args.stuff == False):
+							barr = bytearray(msg)
+						else:
+							barr = PPP_stuff(bytearray(msg))
 						
 						txbuf = bytearray([])
 						for r in range(0,4):
@@ -218,7 +225,7 @@ if __name__ == "__main__":
 						# print(txbuf.hex())
 						# print("hpos: "+str(abhlist[ser_idx].hw_b[0][3])+", "+str(abhlist[ser_idx].hw_b[1][3])+", "+str(abhlist[ser_idx].hw_b[2][3]))
 						xyz,rpy = get_xyz_rpy(abhlist[ser_idx].hw_b[0:3][0:3])
-						print("rpy= "+str(rpy[0])+", "+str(rpy[1])+", "+str(rpy[2]))
+						# print("rpy= "+str(rpy[0])+", "+str(rpy[1])+", "+str(rpy[2]))
 						hpsoc[ser_idx].sendto(txbuf, hps_targs[ser_idx])
 						
 						
@@ -296,7 +303,8 @@ if __name__ == "__main__":
 
 
 				fpsfilt, warr_fps = py_sos_iir(fps, warr_fps, lpf_fps_sos[0])
-				# print (fpsfilt)
+				if(args.showfps):
+					print (fpsfilt)
 		
 		for i in range(0,len(addrs)):
 			addr = addrs[i]
