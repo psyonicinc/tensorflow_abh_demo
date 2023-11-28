@@ -30,7 +30,7 @@ if __name__ == "__main__":
 	parser.add_argument('--loopback',help="flag to indicate looping back all udp traffic",action='store_true')
 	parser.add_argument('--stuff', help="byte stuff outgoing data", action='store_true')
 	parser.add_argument('--showfps', help="enable fps printing", action='store_true')
-
+	
 	args = parser.parse_args()
 	
 	use_grip_cmds = args.do_grip_cmds
@@ -149,7 +149,7 @@ if __name__ == "__main__":
 			abhlist = []
 			for i in range(0,n):
 				abh = AbilityHandBridge()
-				abh.lock_pinch = False
+				abh.lock_pinch = args.do_grip_cmds
 				if(args.no_filter == True):
 					abh.filter_fpos = False
 				abhlist.append(abh)
@@ -209,13 +209,37 @@ if __name__ == "__main__":
 						abhlist[ser_idx].update(mp_hands, results.multi_hand_landmarks[idx].landmark, results.multi_handedness[idx].classification[0].index)
 						#if port:
 						
-						# Write the finger array out over UART to the hand!
-						msg = farr_to_dposition(0x50, np.float32(abhlist[ser_idx].fpos), 1)
-						if(args.stuff == False):
-							barr = bytearray(msg)
-						else:
-							barr = PPP_stuff(bytearray(msg))
 						
+
+						if(abhlist[ser_idx].is_set_grip == 1 and (abhlist[ser_idx].grip_word == 1 or abhlist[ser_idx].grip_word == 3) and use_grip_cmds == 1):
+							grip = 0x00
+							if(abhlist[ser_idx].grip_word == 1):
+								grip = 0x3
+							elif(abhlist[ser_idx].grip_word == 3):
+								grip = 0x4
+							if(prev_cmd_was_grip[ser_idx] == 0):
+								msg = bytearray(send_grip_cmd(0x50, grip, 0xFF))
+								# slist[ser_idx].write(msg)
+								client_sockets[ser_idx].sendto(msg, addrs[ser_idx])
+								time.sleep(0.01)
+								msg = bytearray(send_grip_cmd(0x50, 0x00, 0xFF))
+								# slist[ser_idx].write(msg)
+								client_sockets[ser_idx].sendto(msg, addrs[ser_idx])
+								time.sleep(0.01)
+								prev_cmd_was_grip[ser_idx] = 1
+							msg = send_grip_cmd(0x50, grip, 0xFF)
+							barr = bytearray(msg)
+						else:						
+							prev_cmd_was_grip[ser_idx] = 0
+							# Write the finger array out over UART to the hand!
+							msg = farr_to_dposition(0x50, np.float32(abhlist[ser_idx].fpos), 1)
+							if(args.stuff == False):
+								barr = bytearray(msg)
+							else:
+								barr = PPP_stuff(bytearray(msg))
+						
+
+
 						txbuf = bytearray([])
 						for r in range(0,4):
 							for c in range(0,4):
@@ -234,6 +258,7 @@ if __name__ == "__main__":
 						#loopback. Server (subscriber) expectes straight up floating point with a 32 bit checksum. checksum eval not required
 						# dgram = bytearray(udp_pkt(abhlist[0].fpos))	#publish only 1 hand at a time in this context. 
 						# print("sending ", dgram)
+						# print(bytes(barr).hex())
 						client_sockets[ser_idx].sendto(barr, addrs[ser_idx])
 						if(args.loopback == False):
 							client_sockets[ser_idx].sendto(barr, ('127.0.0.1', addrs[ser_idx][1]))
