@@ -149,7 +149,7 @@ if __name__ == "__main__":
 			abhlist = []
 			for i in range(0,n):
 				abh = AbilityHandBridge()
-				abh.lock_pinch = args.do_grip_cmds
+				abh.lock_pinch = (not args.no_pinch_lock) or args.do_grip_cmds
 				if(args.no_filter == True):
 					abh.filter_fpos = False
 				abhlist.append(abh)
