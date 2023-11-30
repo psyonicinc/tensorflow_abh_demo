@@ -13,6 +13,7 @@ from serial.tools import list_ports
 from gestures import *
 from abh_get_fpos import *
 import argparse
+from PPP_stuffing import *
 
 if __name__ == "__main__":
 		
@@ -22,6 +23,9 @@ if __name__ == "__main__":
 	parser.add_argument('--camera_capture', type=int, help="opencv capture number", default=0)
 	parser.add_argument('--flip_hands', help="set for flipping hands", action='store_true')
 	parser.add_argument('--show_fps', help="set to print obtained fps to stdout",action='store_true')
+	parser.add_argument('--stuff', help="byte stuff outgoing data", action='store_true')
+	parser.add_argument('--showfps', help="enable fps printing", action='store_true')
+
 	args = parser.parse_args()
 	
 	use_grip_cmds = args.do_grip_cmds
@@ -183,7 +187,9 @@ if __name__ == "__main__":
 							prev_cmd_was_grip[idx] = 0
 							# Write the finger array out over UART to the hand!
 							msg = farr_to_barr(0x50, abhlist[idx].fpos)
-
+							if(args.stuff):
+								msg = PPP_stuff(bytearray(msg))
+						
 						slist[ser_idx].write(msg)
 
 						#draw landmarks of the hand we found

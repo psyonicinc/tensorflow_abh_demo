@@ -1,1 +1,1 @@
-python cv_noplot.py --CP210x_only --camera_capture 1 --flip_hands 
+python cv_noplot.py --CP210x_only --stuff --camera_capture 1 --flip_hands 
