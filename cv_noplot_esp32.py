@@ -30,7 +30,7 @@ if __name__ == "__main__":
 	parser.add_argument('--loopback',help="flag to indicate looping back all udp traffic",action='store_true')
 	parser.add_argument('--stuff', help="byte stuff outgoing data", action='store_true')
 	parser.add_argument('--showfps', help="enable fps printing", action='store_true')
-	
+	parser.add_argument('--swapports', help="swap the ports, thereby swapping the left-right hand map without having to do it physically", action='store_true')
 	args = parser.parse_args()
 	
 	use_grip_cmds = args.do_grip_cmds
@@ -59,7 +59,14 @@ if __name__ == "__main__":
 				addrs.append(targ_addr)
 	else:
 		addrs = [('127.0.0.1',ports[0]),('127.0.0.1',ports[1])]	#hardload addrs in case of loopback request
-		
+	if(len(addrs) == 1):
+		addrs.append(('127.0.0.1',ports[1]))	#add a looped back address 
+
+	if (args.swapports):
+		tmp = addrs[0]
+		addrs[0] = addrs[1]
+		addrs[1] = tmp
+
 	for addr in addrs:
 		print("Found: "+addr[0]+":"+str(addr[1]))
 	
