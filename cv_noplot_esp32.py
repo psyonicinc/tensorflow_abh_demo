@@ -31,6 +31,7 @@ if __name__ == "__main__":
 	parser.add_argument('--stuff', help="byte stuff outgoing data", action='store_true')
 	parser.add_argument('--showfps', help="enable fps printing", action='store_true')
 	parser.add_argument('--swapports', help="swap the ports, thereby swapping the left-right hand map without having to do it physically", action='store_true')
+	parser.add_argument('--hpos_ip', help="set specific ip to send the hand data to. For sending to windows for virtual hand control",default='')
 	args = parser.parse_args()
 	
 	use_grip_cmds = args.do_grip_cmds
@@ -59,9 +60,11 @@ if __name__ == "__main__":
 				addrs.append(targ_addr)
 	else:
 		addrs = [('127.0.0.1',ports[0]),('127.0.0.1',ports[1])]	#hardload addrs in case of loopback request
-	if(len(addrs) == 1):
+	if(len(addrs) == 0):
+		addrs = [('127.0.0.1',ports[0]),('127.0.0.1',ports[1])]	#hardload addrs in case of loopback request
+	elif(len(addrs) == 1):
 		addrs.append(('127.0.0.1',ports[1]))	#add a looped back address 
-
+	
 	if (args.swapports):
 		tmp = addrs[0]
 		addrs[0] = addrs[1]
@@ -89,17 +92,20 @@ if __name__ == "__main__":
 	
 	
 	
-	
+	handpos_ip_addr = '127.0.0.1'
+	if(args.hpos_ip != ''):
+		handpos_ip_addr = args.hpos_ip
+		print("Using: "+handpos_ip_addr)
 	lhpos_soc = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 	lhpos_soc.settimeout(0)
-	lhpos_soc.bind(('127.0.0.1', 7239))	#bind to random ass port
+	lhpos_soc.bind(('0.0.0.0', 7239))	#bind to random ass port
 	rhpos_soc = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 	rhpos_soc.settimeout(0)
-	rhpos_soc.bind(('127.0.0.1', 7241))	#bind to random ass port
+	rhpos_soc.bind(('0.0.0.0', 7241))	#bind to random ass port
 	hpsoc = []
 	hpsoc.append(lhpos_soc)
 	hpsoc.append(rhpos_soc)
-	hps_targs = [('127.0.0.1', 7240), ('127.0.0.1', 7242)]
+	hps_targs = [(handpos_ip_addr, 7240), (handpos_ip_addr, 7242)]
 	
 	
 	print("using "+str(len(addrs))+" sockets:")
