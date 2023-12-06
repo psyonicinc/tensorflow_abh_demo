@@ -209,30 +209,49 @@ if __name__ == "__main__":
 						abhlist[ser_idx].update(mp_hands, results.multi_hand_landmarks[idx].landmark, results.multi_handedness[idx].classification[0].index)
 						#if port:
 						
-						# Write the finger array out over UART to the hand!
-						msg = farr_to_dposition(0x50, np.float32(abhlist[ser_idx].fpos), 1)
-						if(args.stuff == False):
-							barr = bytearray(msg)
-						else:
-							barr = PPP_stuff(bytearray(msg))
 						
 
+						if(abhlist[ser_idx].is_set_grip == 1 and (abhlist[ser_idx].grip_word == 1 or abhlist[ser_idx].grip_word == 3) and use_grip_cmds == 1):
+							grip = 0x00
+							if(abhlist[ser_idx].grip_word == 1):
+								grip = 0x3
+							elif(abhlist[ser_idx].grip_word == 3):
+								grip = 0x4
+							if(prev_cmd_was_grip[ser_idx] == 0):
+								msg = bytearray(send_grip_cmd(0x50, grip, 0xFF))
+								# slist[ser_idx].write(msg)
+								client_sockets[ser_idx].sendto(msg, addrs[ser_idx])
+								time.sleep(0.01)
+								msg = bytearray(send_grip_cmd(0x50, 0x00, 0xFF))
+								# slist[ser_idx].write(msg)
+								client_sockets[ser_idx].sendto(msg, addrs[ser_idx])
+								time.sleep(0.01)
+								prev_cmd_was_grip[ser_idx] = 1
+							msg = send_grip_cmd(0x50, grip, 0xFF)
+							barr = bytearray(msg)
+						else:						
+							prev_cmd_was_grip[ser_idx] = 0
+							# Write the finger array out over UART to the hand!
+							msg = farr_to_dposition(0x50, np.float32(abhlist[ser_idx].fpos), 1)
+							if(args.stuff == False):
+								barr = bytearray(msg)
+							else:
+								barr = PPP_stuff(bytearray(msg))
+						
+
+
 						txbuf = bytearray([])
-						# for r in range(0,4):
-						# 	for c in range(0,4):
-						# 		fv = abhlist[ser_idx].hw_b_for_arm[r][c]
-						# 		bv = struct.pack('<f', fv)
-						# 		txbuf = txbuf + bv
-						for r in range(0,3):
-							bv=struct.pack('<f',abhlist[ser_idx].z1_rpy[r])
-							txbuf = txbuf + bv
+						for r in range(0,4):
+							for c in range(0,4):
+								fv = abhlist[ser_idx].hw_b[r][c]
+								bv = struct.pack('<f', fv)
+								txbuf = txbuf + bv
 						# print(txbuf.hex())
 						# print("hpos: "+str(abhlist[ser_idx].hw_b[0][3])+", "+str(abhlist[ser_idx].hw_b[1][3])+", "+str(abhlist[ser_idx].hw_b[2][3]))
 						xyz,rpy = get_xyz_rpy(abhlist[ser_idx].hw_b[0:3][0:3])
 						# print("rpy= "+str(rpy[0])+", "+str(rpy[1])+", "+str(rpy[2]))
-						# print("xyz= "+str(xyz[0])+", "+str(xyz[1])+", "+str(xyz[2]))
 						hpsoc[ser_idx].sendto(txbuf, hps_targs[ser_idx])
-
+						
 						
 							
 		
