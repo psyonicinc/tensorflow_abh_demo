@@ -31,6 +31,7 @@ import os
 
 
 
+
 def get_screen_resolution():
     output = subprocess.Popen('xrandr | grep "\*" | cut -d" " -f4',shell=True, stdout=subprocess.PIPE).communicate()[0]
     resolution = output.split()[0].split(b'x')
@@ -118,7 +119,9 @@ class SerialDisplayer:
                 fpos[5] = -fpos[5]
 
                 msg = farr_to_barr(0x50, fpos)
+                print(msg)
                 serial.write(msg)
+                # sleep(0.1)
         
 
             except:
@@ -129,12 +132,10 @@ class SerialDisplayer:
         for serial in self.slist:
             try:
                 for i in range(len(fpos)):
-                    ft = time.time()*1.25 + i*(2*np.pi)/12
                     fpos[i] = 0
                 
-
                 msg = farr_to_barr(0x50, fpos)
-                serial.write(msg)        
+                serial.write(msg)          
 
             except:
                 pass 
@@ -185,6 +186,7 @@ class SerialDisplayer:
             wave_hand = True
             Relax_H = False
             transition_count = 100
+
 
             fpos = [15., 15., 15., 15., 15., -15.]	# for the slow hand wave
 
@@ -323,10 +325,11 @@ class SerialDisplayer:
                     if (wave_hand):
                         Relax_H = False
                         self.wave_hand(fpos)
+                        # print("here")
                     else:
                         if(Relax_H == False):
-                            self.relax_hand(fpos)
-                            Relax_H = True
+                            self.relax_hand(fpos)                    
+                            # Relax_H = True
 
                     image = self.screen_saver
 
