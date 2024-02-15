@@ -59,7 +59,8 @@ try:
 	rFSR = np.array([])
 	
 	stuff_buffer = np.array([])
-
+	num_writes = 0
+	num_reads = 0
 	while 1:
 		
 		
@@ -70,6 +71,7 @@ try:
 		
 		msg = farr_to_dposition(0x50, fpos, 1)
 		slist[0].write(PPP_stuff(bytearray(msg)))
+		num_writes = num_writes + 1
 		# slist[0].write(msg)
 		
 		time.sleep(.001)	#this delay is optional when PPP stuffing is used. Its absense may cause windows to BSOD, however, due to bad CP2102 drivers that don't guard against memory overrun.
@@ -96,15 +98,16 @@ try:
 							print(", bin=",end='')
 							m_print_nparr(rFSR)
 						print('')
-						
-					else:	
-						# print("Fail, "+str(len(payload)))
-						print("Fail: " + str(payload))
+						num_reads = num_reads + 1
+					# else:	
+					# 	# print("Fail, "+str(len(payload)))
+					# 	print("Fail: " + str(payload))
 
 		
 		
 except KeyboardInterrupt:
 	pass
 	
+print("\r\n"+str(num_writes)+" Writes, "+str(num_reads)+" Reads, Ratio="+str(num_reads/num_writes))
 for s in slist:
 	s.close()
