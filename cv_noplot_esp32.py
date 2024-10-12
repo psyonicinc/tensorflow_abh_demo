@@ -51,19 +51,29 @@ if __name__ == "__main__":
 	"""
 	addrs = []
 	ports = [34345,23234]
-	if(args.loopback == False):
-		scanport = 7134
-		bkst_ip = get_bkst_ip_from_usr()
-		for port in ports:
-			targ_addr = scan_split_streams( (bkst_ip,port), 1, port, 7134)	#use a random port to scan with, which avoids collisions with any plotting software that might be monitoring the RX port/split traffic
-			if(targ_addr != ''):
-				addrs.append(targ_addr)
-	else:
-		addrs = [('127.0.0.1',ports[0]),('127.0.0.1',ports[1])]	#hardload addrs in case of loopback request
-	if(len(addrs) == 0):
-		addrs = [('127.0.0.1',ports[0]),('127.0.0.1',ports[1])]	#hardload addrs in case of loopback request
-	elif(len(addrs) == 1):
+	scanport = 7134
+	bkst_ip = '192.168.123.255'
+	for port in ports:
+		targ_addr = scan_split_streams( (bkst_ip,port), 1, port, 7134)
+		if(targ_addr != ''):
+			addrs.append(targ_addr)
+			print("Targeting:", targ_addr)
+	if(len(addrs) == 1):
 		addrs.append(('127.0.0.1',ports[1]))	#add a looped back address 
+
+	# if(args.loopback == False):
+	# 	scanport = 7134
+	# 	bkst_ip = get_bkst_ip_from_usr()
+	# 	for port in ports:
+	# 		targ_addr = scan_split_streams( (bkst_ip,port), 1, port, 7134)	#use a random port to scan with, which avoids collisions with any plotting software that might be monitoring the RX port/split traffic
+	# 		if(targ_addr != ''):
+	# 			addrs.append(targ_addr)
+	# else:
+	# 	addrs = [('127.0.0.1',ports[0]),('127.0.0.1',ports[1])]	#hardload addrs in case of loopback request
+	# if(len(addrs) == 0):
+	# 	addrs = [('127.0.0.1',ports[0]),('127.0.0.1',ports[1])]	#hardload addrs in case of loopback request
+	# elif(len(addrs) == 1):
+	# 	addrs.append(('127.0.0.1',ports[1]))	#add a looped back address 
 	
 	if (args.swapports):
 		tmp = addrs[0]
@@ -96,6 +106,7 @@ if __name__ == "__main__":
 	if(args.hpos_ip != ''):
 		handpos_ip_addr = args.hpos_ip
 		print("Using: "+handpos_ip_addr)
+	print("Sending arm control data to:", handpos_ip_addr)
 	lhpos_soc = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 	lhpos_soc.settimeout(0)
 	lhpos_soc.bind(('0.0.0.0', 7239))	#bind to random ass port
