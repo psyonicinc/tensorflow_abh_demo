@@ -70,7 +70,7 @@ class SerialDisplayer:
             try:
                 ser = []
                 if ( (not self.CP210x_only) or (self.CP210x_only == True and (p[1].find('FT232R') != -1)) ):
-                    ser = (serial.Serial(p[0], '460800', timeout=1))
+                    ser = (serial.Serial(p[0], '115200', timeout=1))
                     self.slist.append(ser)
                     print("connected!", p)
 
@@ -114,14 +114,14 @@ class SerialDisplayer:
         for serial in self.slist:
             try:
                 for i in range(len(fpos)):
-                    ft = time.time()*1.25 + i*(2*np.pi)/12
+                    ft = time.time()*0.905 + i*(2*np.pi)/12
                     fpos[i] = (0.5*math.sin(ft)+0.5)*45 + 15
                 fpos[5] = -fpos[5]
 
                 msg = farr_to_barr(0x50, fpos)
-                print(msg)
                 serial.write(msg)
-                # sleep(0.1)
+                serial.reset_input_buffer()
+                # time.sleep(.1)
         
 
             except:
@@ -132,7 +132,7 @@ class SerialDisplayer:
         for serial in self.slist:
             try:
                 for i in range(len(fpos)):
-                    fpos[i] = 0
+                    fpos[i] = 1
                 
                 msg = farr_to_barr(0x50, fpos)
                 serial.write(msg)          
@@ -185,6 +185,7 @@ class SerialDisplayer:
             show_webcam = False
             wave_hand = True
             Relax_H = False
+            Counter_Relax = 0
             transition_count = 100
 
 
@@ -327,9 +328,12 @@ class SerialDisplayer:
                         self.wave_hand(fpos)
                         # print("here")
                     else:
-                        if(Relax_H == False):
-                            self.relax_hand(fpos)                    
-                            # Relax_H = True
+                        if(Relax_H == False):                             
+                            # if(Counter_Relax > 8):                  
+                            #     Relax_H = True
+                            #     Counter_Relax = 0
+                            # Counter_Relax = Counter_Relax +1
+                            self.relax_hand(fpos) 
 
                     image = self.screen_saver
 
