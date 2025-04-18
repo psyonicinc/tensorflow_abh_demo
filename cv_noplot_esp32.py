@@ -16,6 +16,7 @@ import argparse
 import socket
 from udp_bkst_query import *
 from PPP_stuffing import *
+import pyautogui
 
 if __name__ == "__main__":
 		
@@ -34,6 +35,8 @@ if __name__ == "__main__":
 	parser.add_argument('--hpos_ip', help="set specific ip to send the hand data to. For sending to windows for virtual hand control",default='')
 	args = parser.parse_args()
 	
+	dim = pyautogui.size()
+
 	use_grip_cmds = args.do_grip_cmds
 	if(use_grip_cmds):
 		print("Using grip commmands")
@@ -333,10 +336,30 @@ if __name__ == "__main__":
 
 					
 				# Flip the image horizontally for a selfie-view display.
-				cv2.namedWindow('MediaPipe Hands', cv2.WINDOW_FREERATIO)
-				cv2.setWindowProperty('MediaPipe Hands',  cv2.WND_PROP_ASPECT_RATIO, cv2.WINDOW_FREERATIO)
-				cv2.imshow('MediaPipe Hands', cv2.flip(image, 1))
+				cv2.namedWindow('MediaPipe Hands', cv2.WINDOW_NORMAL)
+				cv2.setWindowProperty('MediaPipe Hands',  cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
+				# cv2.imshow('MediaPipe Hands', cv2.flip(image, 1))
+				imgresized = cv2.resize(image, (dim[0], dim[1]), interpolation=cv2.INTER_CUBIC)
 
+				(x, y, windowWidth, windowHeight) = cv2.getWindowImageRect('MediaPipe Hands')
+				ydiv = np.floor(windowHeight/imgresized.shape[0])
+				xdiv = np.floor(windowWidth/imgresized.shape[1])
+				uniform_mult = np.max([1,np.min([xdiv,ydiv])])
+				
+				yrem = (windowHeight - imgresized.shape[0]*uniform_mult)
+				xrem = (windowWidth - imgresized.shape[1]*uniform_mult)
+				top = int(np.max([0, yrem/2]))
+				bottom = top
+				left = int(np.max([0,xrem/2]))
+				right = left
+				
+				# Pick which 'imgresized' will give you the right fullscreen you want
+				# imgresized = cv2.resize(image, (int(image.shape[1]*uniform_mult),int(image.shape[0]*uniform_mult)), interpolation=cv2.INTER_AREA)
+				dst = cv2.copyMakeBorder(imgresized,top,bottom,left,right, cv2.BORDER_CONSTANT, None, value = 0)
+				# if (show_webcam):
+				# 	self.freeze_pic = cv2.resize(dst, (self.dim[0], self.dim[1]), interpolation=cv2.INTER_CUBIC)
+				cv2.imshow('MediaPipe Hands', dst)
+				
 				if cv2.waitKey(1) & 0xFF == 27:
 					break
 
