@@ -2,7 +2,7 @@ from enum import Enum
 import logging
 from typing import List
 
-from .. import config
+import config
 
 FRAME_CHAR = 0x7E
 ESC_CHAR = 0x7D
