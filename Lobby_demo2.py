@@ -7,13 +7,17 @@ from matplotlib import animation
 from matplotlib import pyplot as plt
 from vect_tools import *
 from rtfilt import *
+from abh_api_core import *
 from scipy import signal
 import serial
 from serial.tools import list_ports
 from gestures import *
 from abh_get_fpos import *
 import argparse
-from ability_hand_api.python.ah_wrapper.ah_serial_client import AHSerialClient
+from ability_hand_api_local.python.ah_wrapper.ah_serial_client import AHSerialClient
+
+
+# debugging. please remove after done
 import traceback
 
 # keystroke listening
@@ -26,6 +30,9 @@ from threading import Thread
 import subprocess
 import pyautogui
 import os
+
+
+
 
 def get_screen_resolution():
     output = subprocess.Popen('xrandr | grep "\*" | cut -d" " -f4',shell=True, stdout=subprocess.PIPE).communicate()[0]
@@ -40,7 +47,7 @@ class SerialDisplayer:
         self.reverse = reverse
         self.camera_capture = camera_capture
         self.fade_rate = fade_rate
-        self.input_listener = None
+        self.input_listener = None # meant to be a serial object
 
         self.dim = pyautogui.size()
         self.screen_saver = cv2.imread("default_img.jpg", cv2.IMREAD_COLOR)
@@ -48,6 +55,7 @@ class SerialDisplayer:
         self.screen_saver = cv2.resize(self.screen_saver, (self.dim[0], self.dim[1]), interpolation=cv2.INTER_CUBIC)
         self.black_img = np.zeros_like(self.screen_saver)
 
+        # Find all serial ports
         self.slist = []
         com_ports_list = list(list_ports.comports())
         port = []
@@ -62,36 +70,49 @@ class SerialDisplayer:
 
         for p in port:
             try:
-                if (not self.CP210x_only or (self.CP210x_only and ('FT232R' in p[1]))):
+                ser = []
+                if ( (not self.CP210x_only) or (self.CP210x_only == True and (p[1].find('FT232R') != -1)) ):
                     client = AHSerialClient()
                     self.slist.append(client)
-                    print("Connected to Ability Hand on: ", p)
+                    print("connected!", p)
 
-                elif not self.no_input and (not self.CP210x_only or (self.CP210x_only and ('CP210' in p[1]))):
+                # TODO: IR sensor input listeners 
+                elif not self.no_input and ( (not self.CP210x_only) or (self.CP210x_only == True and (p[1].find('CP210') != -1) ) ):
                     print("connecting input handler...")
-                    self.input_listener = serial.Serial(p[0], '460800', timeout=1)
+                    self.input_listener = (serial.Serial(p[0], '460800', timeout=1))
                     print("connected input handler: ", p)
 
             except Exception:
-                print("Failed to connect. Traceback:")
-                print(traceback.format_exc())
+                print("Failed to connect. here's traceback: ")
+                print(traceback.format_exc)
 
-        if not (len(self.slist) > 0 and len(self.slist) <= 2):
-            raise RuntimeError("No serial ports connected")
+        print("found ", len(self.slist), " ports")
+
+        if not (len(self.slist) > 0 and len(self.slist) <= 2): # check number of available hands
+            raise RuntimeError("no serial ports connected")
         else:
             self.n = len(self.slist)
 
+
         if not self.input_listener:
-            print("Warning: no input handler found")
+            print("warning: no input handler found")
+            # raise RuntimeError("No switch found. Cannot launch program")
         else:
             ir_port = self.input_listener.port
             self.input_listener.close()
-            self.input_listener = serial.Serial(ir_port, '500000', timeout=1)
+            self.input_listener = serial.Serial(ir_port,'500000', timeout=1)
+            
+        for s in self.slist:
+            buf = create_misc_msg(0x50, 0xC2)
+            print("writing thumb filter message on com port: ", s)
+            s.write(buf)
+        
 
         if self.reverse:
             self.slist.reverse()
 
     def wave_hand(self, fpos):
+        """helper function to run handwave"""
         for client in self.slist:
             try:
                 for i in range(len(fpos)):
@@ -99,62 +120,108 @@ class SerialDisplayer:
                     fpos[i] = (0.5*math.sin(ft)+0.5)*45 + 15
                 fpos[5] = -fpos[5]
                 client.set_position(fpos)
+        
+
             except:
                 pass 
 
-    def relax_hand(self, fpos):
+    def relax_hand(self,fpos):
+        """helper function to run handwave"""
         for client in self.slist:
             try:
-                fpos = [1]*6
-                client.set_position(fpos)
+                for i in range(len(fpos)):
+                    fpos[i] = 1
+                
+                client.set_position(fpos)        
+
             except:
                 pass 
+        
 
     def run(self):
-        lpf_fps_sos = signal.iirfilter(2, Wn=0.7, btype='lowpass', analog=False, ftype='butter', output='sos', fs=30)
-        prev_cmd_was_grip = [0, 0]
+        """main loop that runs"""
+
+        lpf_fps_sos = signal.iirfilter(2, Wn=0.7, btype='lowpass', analog=False, ftype='butter', output='sos', fs=30)	#filter for the fps counter
+        prev_cmd_was_grip = [0,0]
 
         mp_drawing = mp.solutions.drawing_utils
         mp_drawing_styles = mp.solutions.drawing_styles
         mp_hands = mp.solutions.hands
 
+        # webcam input
+        fourcc = cv2.VideoWriter_fourcc('M','J','P','G')
         cap = cv2.VideoCapture(0)
-        cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*'MJPG'))
+        cap.set(cv2.CAP_PROP_FOURCC, fourcc)
         cap.set(cv2.CAP_PROP_FPS, 90)
         cap.set(cv2.CAP_PROP_FRAME_WIDTH, int(1920*720/1080))
         cap.set(cv2.CAP_PROP_FRAME_HEIGHT, int(1080*720/1080))
 
         fps = int(cap.get(5))
         print("fps: ", fps)
-
+        
         with mp_hands.Hands(
-            max_num_hands=self.n,
-            model_complexity=0,
-            min_detection_confidence=0.33,
-            min_tracking_confidence=0.66) as hands:
-
+				max_num_hands=self.n,
+				model_complexity=0,
+				min_detection_confidence=0.33,
+				min_tracking_confidence=0.66) as hands:
+            
             tprev = cv2.getTickCount()
             warr_fps = [0,0,0]
+            
+            # params for grip overload
+            abhlist = []
+            for i in range(self.n):
+                abh = AbilityHandBridge()
+                abhlist.append(abh)
+            
+            #abhlist.reverse()
 
-            from abh_api_core import AbilityHandBridge
-            abhlist = [AbilityHandBridge() for _ in range(self.n)]
+            send_unsampling_msg_ts = 0
 
+            Transition = True
             show_webcam = False
             wave_hand = True
             Relax_H = False
+            Counter_Relax = 0
             transition_count = 100
-            fpos = [15., 15., 15., 15., 15., -15.]
+
+
+            fpos = [15., 15., 15., 15., 15., -15.]	# for the slow hand wave
 
             while True:
                 if self.input_listener:
-                    data_char = set(self.input_listener.read(self.input_listener.inWaiting()).decode('ascii'))
-                    if 'A' in data_char or 'X' in data_char:
-                        show_webcam = not show_webcam
+                    #data_char = self.input_listener.read(self.input_listener.inWaiting())
+                    data_char = set(self.input_listener.read(self.input_listener.inWaiting()).decode('ascii')) # get our input
+                    
+                    if 'A' in data_char:
+                        if(Transition):                            
+                            show_webcam = True
+                        else:
+                            show_webcam = False
+
+                        Transition =not Transition
                         transition_count = 0
-                    elif ('Y' in data_char or 'U' in data_char) and not show_webcam:
+
+                    elif 'X' in data_char:
+                        if(Transition):                            
+                            show_webcam = True
+                        else:
+                            show_webcam = False
+
+                        Transition =not Transition
+                        transition_count = 0
+
+
+                    elif 'Y' in data_char and not show_webcam:
+                        wave_hand = not wave_hand
+
+                    elif 'U' in data_char and not show_webcam:
                         wave_hand = not wave_hand
 
                 if show_webcam:
+                    """
+                    mediapipe hand detection
+                    """
                     Relax_H = False
                     if cap.isOpened():
                         ts = cv2.getTickCount()
@@ -162,41 +229,52 @@ class SerialDisplayer:
                         tprev = ts
                         fps = cv2.getTickFrequency()/tdif
                         success, image = cap.read()
+                        #print("webcam image shape: ", image.shape)
 
                         if not success:
                             print("ignoring empty frame")
                             continue
-
+                        
                         image.flags.writeable = False
                         image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR) 
                         results = hands.process(image)
-                        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-
+                        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB) # comment/uncomment if color output looks funny
                         if results.multi_hand_landmarks:
                             num_writes = 1
-                            if len(results.multi_hand_landmarks) == 2 and results.multi_handedness[0].classification[0].index != results.multi_handedness[1].classification[0].index:
+                            if(len(results.multi_hand_landmarks) == 2 and results.multi_handedness[0].classification[0].index != results.multi_handedness[1].classification[0].index):
                                 num_writes = 2
                             for idx in range(num_writes):
+                                # log time for plotting
                                 t = time.time()
                                 ser_idx = results.multi_handedness[idx].classification[0].index
-                                if self.n == 1:
+                                if (self.n == 1):
                                     ser_idx = 0
 
                                 abhlist[idx].update(mp_hands, results.multi_hand_landmarks[idx].landmark, results.multi_handedness[idx].classification[0].index)
 
-                                if abhlist[idx].is_set_grip == 1 and (abhlist[idx].grip_word in [1, 3]) and self.use_grip_cmds:
-                                    grip = 0x3 if abhlist[idx].grip_word == 1 else 0x4
-                                    if prev_cmd_was_grip[ser_idx] == 0:
-                                        self.slist[ser_idx].set_grip(grip)
+                                if abhlist[idx].is_set_grip == 1 and (abhlist[idx].grip_word == 1 or abhlist[idx].grip_word == 3) and self.use_grip_cmds == 1:
+                                    grip = 0x00
+                                    if (abhlist[idx].grip_word == 1):
+                                        grip = 0x3
+                                    elif (abhlist[idx].grip_word ==3):
+                                        grip = 0x4
+                                    if (prev_cmd_was_grip[ser_idx] == 0):
+                                        msg = send_grip_cmd(0x50, grip, 0xFF)
+                                        self.slist[ser_idx].write(msg)
                                         time.sleep(0.01)
-                                        self.slist[ser_idx].set_grip(0x00)
+                                        msg = send_grip_cmd(0x50, 0x00, 0xFF)
+                                        self.slist[ser_idx].write(msg)
                                         time.sleep(0.01)
                                         prev_cmd_was_grip[ser_idx] = 1
-                                    self.slist[ser_idx].set_grip(grip)
+                                    msg = send_grip_cmd(0x50, grip, 0xFF)
                                 else:
                                     prev_cmd_was_grip[idx] = 0
-                                    self.slist[ser_idx].set_position(abhlist[idx].fpos)
+                                    # Write the finger array out over UART to the hand!
+                                    msg = farr_to_barr(0x50, abhlist[idx].fpos)
+                                
+                                self.slist[ser_idx].write(msg)
 
+                                # draw landmarks of the hand we found
                                 hand_landmarks = results.multi_hand_landmarks[idx]
                                 mp_drawing.draw_landmarks(
                                     image,
@@ -206,69 +284,119 @@ class SerialDisplayer:
                                     mp_drawing_styles.get_default_hand_connections_style()
                                 )
 
+                                # Render a static point in the base frame of the model. Visualization of the position-orientation accuracy.
+                                # Point should be just in front of the palm. Compensated for handedness
+                                static_point_b = np.array([4.16, 1.05, -1.47*abhlist[idx].handed_sign, 1])*abhlist[idx].scale
+                                static_point_b[3] = 1 # remove scaling that wasapplied to the immutable '1'
+                                neutral_thumb_w = abhlist[idx].hw_b.dot(static_point_b) # get dot position in world coordinates for a visual tag/reference
+                                l_list = landmark_pb2.NormalizedLandmarkList(
+                                    landmark=[
+                                        v4_to_landmark(neutral_thumb_w)
+                                    ]
+                                )
+                                mp_drawing.draw_landmarks(
+                                    image,
+                                    l_list,
+                                    [],
+                                    mp_drawing_styles.get_default_hand_landmarks_style(),
+                                    mp_drawing_styles.get_default_hand_connections_style()
+                                )
+
+                        t_seconds = ts/cv2.getTickFrequency()
+                        if (t_seconds > send_unsampling_msg_ts):
+                            send_unsampling_msg_ts = t_seconds + 10
+                            for i in range(self.n):
+                                msg = create_misc_msg(0x50, 0xC2)
+                                print("sending: ", [ hex(b) for b in msg ], "to ser device ", i)
+                                self.slist[i].write(msg)
+
                         fpsfilt, warr_fps = py_sos_iir(fps, warr_fps, lpf_fps_sos[0])
                         print(fpsfilt)
                         image = cv2.flip(image, 1)
                         imgresized = cv2.resize(image, (self.dim[0], self.dim[1]), interpolation=cv2.INTER_CUBIC)
-                        if transition_count < self.fade_rate:
-                            fadein = transition_count / float(self.fade_rate)
-                            imgresized = cv2.addWeighted(self.black_img, 1 - fadein, imgresized, fadein, 0)
+                        if (transition_count < self.fade_rate):
+                            fadein = transition_count/float(self.fade_rate)
+                            imgresized = cv2.addWeighted(self.black_img, 1-fadein, imgresized, fadein, 0)
                             transition_count += 1
+         
                 else:
-                    if wave_hand:
+                    if (wave_hand):
                         Relax_H = False
                         self.wave_hand(fpos)
+                        # print("here")
                     else:
-                        if not Relax_H:
-                            self.relax_hand(fpos)
+                        if(Relax_H == False):                             
+                            # if(Counter_Relax > 8):                  
+                            #     Relax_H = True
+                            #     Counter_Relax = 0
+                            # Counter_Relax = Counter_Relax +1
+                            self.relax_hand(fpos) 
 
-                    imgresized = self.screen_saver
+                    image = self.screen_saver
 
-                    if transition_count < float(self.fade_rate) and cap.isOpened():
+                    if (transition_count < float(self.fade_rate) and cap.isOpened()):
                         _, webcam_img = cap.read()
                         webcam_img = cv2.flip(webcam_img, 1)
                         webcam_img = cv2.resize(webcam_img, (self.dim[0], self.dim[1]), interpolation=cv2.INTER_CUBIC)
-                        fadein = transition_count / float(self.fade_rate)
-                        imgresized = cv2.addWeighted(self.black_img, 1 - fadein, self.screen_saver, fadein, 0)
+                        fadein = transition_count/float(self.fade_rate)
+                        imgresized = cv2.addWeighted(self.black_img, 1-fadein, self.screen_saver, fadein, 0)
                         transition_count += 1
+                    else:
+                        imgresized = image
+                    # time.sleep(0.001) # not sure if we need this so much so I commented it out
 
+                # Flip the image horizontally for selfie-view display
                 cv2.namedWindow('MediaPipe Hands', cv2.WINDOW_NORMAL)
                 cv2.setWindowProperty('MediaPipe Hands',  cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
-                dst = cv2.resize(imgresized, (self.dim[0], self.dim[1]), interpolation=cv2.INTER_CUBIC)
+                
+                (x, y, windowWidth, windowHeight) = cv2.getWindowImageRect('MediaPipe Hands')
+                ydiv = np.floor(windowHeight/imgresized.shape[0])
+                xdiv = np.floor(windowWidth/imgresized.shape[1])
+                uniform_mult = np.max([1,np.min([xdiv,ydiv])])
+                
+                yrem = (windowHeight - imgresized.shape[0]*uniform_mult)
+                xrem = (windowWidth - imgresized.shape[1]*uniform_mult)
+                top = int(np.max([0, yrem/2]))
+                bottom = top
+                left = int(np.max([0,xrem/2]))
+                right = left
+                
+                # Pick which 'imgresized' will give you the right fullscreen you want
+                # imgresized = cv2.resize(image, (int(image.shape[1]*uniform_mult),int(image.shape[0]*uniform_mult)), interpolation=cv2.INTER_AREA)
+                dst = cv2.copyMakeBorder(imgresized,top,bottom,left,right, cv2.BORDER_CONSTANT, None, value = 0)
+                if (show_webcam):
+                    self.freeze_pic = cv2.resize(dst, (self.dim[0], self.dim[1]), interpolation=cv2.INTER_CUBIC)
                 cv2.imshow('MediaPipe Hands', dst)
-
-                key = cv2.waitKey(1) & 0xFF
+                
+                key = cv2.waitKey(1) & 0xFF 
                 if key == ord('q'):
                     break
                 if key == ord('a'):
                     show_webcam = not show_webcam
                     transition_count = 0
+                
                 if key == ord('x') and not show_webcam:
                     wave_hand = not wave_hand
-
+                
         cap.release()
         for s in self.slist:
             s.close()
+        
         if self.input_listener:
             self.input_listener.close()
-        cv2.destroyAllWindows()
 
-if __name__ == "__main__":
+    cv2.destroyAllWindows()
+    #os.system("killall -9 unclutter")
+
+if __name__=="__main__":
     parser = argparse.ArgumentParser(description='Hand CV Demo Parser')
-    parser.add_argument('--do_grip_cmds', action='store_true')
-    parser.add_argument('--CP210x_only', action='store_true')
-    parser.add_argument('--no_input', action='store_true')
-    parser.add_argument('--reverse', action='store_true')
-    parser.add_argument('--camera_capture', type=int, default=0)
-    parser.add_argument('--fade_rate', type=int, default=20)
+    parser.add_argument('--do_grip_cmds' , help="Include flag for using grip commands for grip recognitions", action='store_true')
+    parser.add_argument('--CP210x_only', help="for aadeel's bad computer", action='store_true')
+    parser.add_argument('--no_input', help="No input handler? Skip input reading step", action='store_true')
+    parser.add_argument('--reverse', help="reverse the order of the hands in order to map detections properly", action='store_true')
+    parser.add_argument('--camera_capture', type=int, help="opencv capture number", default=0)
+    parser.add_argument('--fade_rate', type=int, help="fade transition speed", default=20)
     args = parser.parse_args()
-
-    displayer = SerialDisplayer(
-        use_grip_cmds=args.do_grip_cmds,
-        CP210x_only=args.CP210x_only,
-        no_input=args.no_input,
-        reverse=args.reverse,
-        camera_capture=args.camera_capture,
-        fade_rate=args.fade_rate
-    )
+    
+    displayer = SerialDisplayer(use_grip_cmds=args.do_grip_cmds, CP210x_only=args.CP210x_only, no_input=args.no_input, reverse=args.reverse, camera_capture=args.camera_capture, fade_rate=args.fade_rate)
     displayer.run()
