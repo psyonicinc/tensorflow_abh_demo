@@ -14,7 +14,9 @@ from serial.tools import list_ports
 from gestures import *
 from abh_get_fpos import *
 import argparse
-import ability_hand_api_local.python.ah_wrapper.ppp_stuffing as PPP_STUFFING
+
+# import ability_hand_api_local.python.ah_wrapper.ppp_stuffing as PPP_STUFFING
+import ah_wrapper.ppp_stuffing as PPP_STUFFING
 
 
 # debugging. please remove after done
