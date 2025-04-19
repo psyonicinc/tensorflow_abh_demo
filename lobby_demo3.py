@@ -106,7 +106,7 @@ class SerialDisplayer:
             
         for s in self.slist:
             buf = create_misc_msg(0x50, 0xC2)
-            buf = PPP_STUFFING(buf)
+            buf = PPP_STUFFING.ppp_stuff(buf)
             print("writing thumb filter message on com port: ", s)
             s.write(buf)
         
@@ -124,7 +124,7 @@ class SerialDisplayer:
                 fpos[5] = -fpos[5]
 
                 msg = farr_to_barr(0x50, fpos)
-                msg = PPP_STUFFING(msg)
+                msg = PPP_STUFFING.ppp_stuff(msg)
                 serial.write(msg)
                 serial.reset_input_buffer()
                 # time.sleep(.1)
@@ -141,7 +141,7 @@ class SerialDisplayer:
                     fpos[i] = 1
                 
                 msg = farr_to_barr(0x50, fpos)
-                msg = PPP_STUFFING(msg)
+                msg = PPP_STUFFING.ppp_stuff(msg)
                 serial.write(msg)          
 
             except:
@@ -281,7 +281,7 @@ class SerialDisplayer:
                                     prev_cmd_was_grip[idx] = 0
                                     # Write the finger array out over UART to the hand!
                                     msg = farr_to_barr(0x50, abhlist[idx].fpos)
-                                msg = PPP_STUFFING(msg)
+                                msg = PPP_STUFFING.ppp_stuff(msg)
                                 self.slist[ser_idx].write(msg)
 
                                 # draw landmarks of the hand we found
@@ -318,7 +318,7 @@ class SerialDisplayer:
                             for i in range(self.n):
                                 msg = create_misc_msg(0x50, 0xC2)
                                 print("sending: ", [ hex(b) for b in msg ], "to ser device ", i)
-                                msg = PPP_STUFFING(msg)
+                                msg = PPP_STUFFING.ppp_stuff(msg)
                                 self.slist[i].write(msg)
 
                         fpsfilt, warr_fps = py_sos_iir(fps, warr_fps, lpf_fps_sos[0])
