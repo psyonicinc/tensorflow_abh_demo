@@ -248,27 +248,11 @@ class SerialDisplayer:
 
                                 abhlist[idx].update(mp_hands, results.multi_hand_landmarks[idx].landmark, results.multi_handedness[idx].classification[0].index)
 
-                                if abhlist[idx].is_set_grip == 1 and (abhlist[idx].grip_word == 1 or abhlist[idx].grip_word == 3) and self.use_grip_cmds == 1:
-                                    grip = 0x00
-                                    if (abhlist[idx].grip_word == 1):
-                                        grip = 0x3
-                                    elif (abhlist[idx].grip_word ==3):
-                                        grip = 0x4
-                                    if (prev_cmd_was_grip[ser_idx] == 0):
-                                        msg = send_grip_cmd(0x50, grip, 0xFF)
-                                        self.slist[ser_idx].write(msg)
-                                        time.sleep(0.01)
-                                        msg = send_grip_cmd(0x50, 0x00, 0xFF)
-                                        self.slist[ser_idx].write(msg)
-                                        time.sleep(0.01)
-                                        prev_cmd_was_grip[ser_idx] = 1
-                                    msg = send_grip_cmd(0x50, grip, 0xFF)
-                                else:
-                                    prev_cmd_was_grip[idx] = 0
-                                    # Write the finger array out over UART to the hand!
-                                    msg = farr_to_barr(0x50, abhlist[idx].fpos)
-                                
-                                self.slist[ser_idx].write(msg)
+
+                                prev_cmd_was_grip[idx] = 0
+                                # Write the finger array out over UART to the hand!
+                                self.slist.set_position(msg)
+                                # self.slist[ser_idx].write(msg)
 
                                 # draw landmarks of the hand we found
                                 hand_landmarks = results.multi_hand_landmarks[idx]
@@ -304,7 +288,7 @@ class SerialDisplayer:
                             for i in range(self.n):
                                 msg = create_misc_msg(0x50, 0xC2)
                                 print("sending: ", [ hex(b) for b in msg ], "to ser device ", i)
-                                self.slist[i].write(msg)
+                                self.slist.set_position(msg)
 
                         fpsfilt, warr_fps = py_sos_iir(fps, warr_fps, lpf_fps_sos[0])
                         print(fpsfilt)
