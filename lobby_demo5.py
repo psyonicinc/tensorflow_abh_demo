@@ -116,7 +116,8 @@ class SerialDisplayer:
                     ft = time.time()*0.905 + i*(2*np.pi)/12
                     fpos[i] = (0.5*math.sin(ft)+0.5)*45 + 15
                 fpos[5] = -fpos[5]
-                client.set_position(fpos)
+                client.set_position(positions=fpos)
+                client.send_command() 
         
 
             except:
@@ -129,7 +130,8 @@ class SerialDisplayer:
                 for i in range(len(fpos)):
                     fpos[i] = 1
                 
-                client.set_position(fpos)        
+                client.set_position(positions=fpos) 
+                client.send_command()        
 
             except:
                 pass 
@@ -252,7 +254,7 @@ class SerialDisplayer:
 
                                 prev_cmd_was_grip[idx] = 0
                                 # Write the finger array out over UART to the hand!
-                                self.slist.set_position(msg)
+                                self.slist.set_position(positions=msg)
                                 # self.slist[ser_idx].write(msg)
 
                                 # draw landmarks of the hand we found
@@ -289,7 +291,7 @@ class SerialDisplayer:
                             for i in range(self.n):
                                 msg = create_misc_msg(0x50, 0xC2)
                                 print("sending: ", [ hex(b) for b in msg ], "to ser device ", i)
-                                self.slist.set_position(msg)
+                                self.slist.set_position(positions=msg)
 
                         fpsfilt, warr_fps = py_sos_iir(fps, warr_fps, lpf_fps_sos[0])
                         print(fpsfilt)
