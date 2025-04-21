@@ -60,6 +60,13 @@ class SerialDisplayer:
         com_ports_list = list(list_ports.comports())
         port = []
 
+        client = AHSerialClient()
+        self.slist.append(client)
+        print("connected!")
+        client = AHSerialClient()
+        self.slist.append(client)
+        print("connected!")
+
         for p in com_ports_list:
             if(p):
                 port.append(p)
@@ -70,14 +77,8 @@ class SerialDisplayer:
 
         for p in port:
             try:
-                ser = []
-                if ( (not self.CP210x_only) or (self.CP210x_only == True and (p[1].find('FT232R') != -1)) ):
-                    client = AHSerialClient()
-                    self.slist.append(client)
-                    print("connected!", p)
-
                 # TODO: IR sensor input listeners 
-                elif not self.no_input and ( (not self.CP210x_only) or (self.CP210x_only == True and (p[1].find('CP210') != -1) ) ):
+                if not self.no_input and ( (not self.CP210x_only) or (self.CP210x_only == True and (p[1].find('CP210') != -1) ) ):
                     print("connecting input handler...")
                     self.input_listener = (serial.Serial(p[0], '460800', timeout=1))
                     print("connected input handler: ", p)
@@ -116,7 +117,6 @@ class SerialDisplayer:
                     fpos[i] = (0.5*math.sin(ft)+0.5)*45 + 15
                 fpos[5] = -fpos[5]
                 client.set_position(fpos)
-                client.send_command() 
         
 
             except:
@@ -129,8 +129,7 @@ class SerialDisplayer:
                 for i in range(len(fpos)):
                     fpos[i] = 1
                 
-                client.set_position(fpos)   
-                client.send_command()     
+                client.set_position(fpos)        
 
             except:
                 pass 
@@ -253,8 +252,7 @@ class SerialDisplayer:
 
                                 prev_cmd_was_grip[idx] = 0
                                 # Write the finger array out over UART to the hand!
-                                self.set_position(positions=msg, reply_mode=2)  # Update command
-                                self.slist.send_command()  # Send command
+                                self.slist.set_position(msg)
                                 # self.slist[ser_idx].write(msg)
 
                                 # draw landmarks of the hand we found
@@ -291,8 +289,7 @@ class SerialDisplayer:
                             for i in range(self.n):
                                 msg = create_misc_msg(0x50, 0xC2)
                                 print("sending: ", [ hex(b) for b in msg ], "to ser device ", i)
-                                self.set_position(positions=msg, reply_mode=2)  # Update command
-                                self.slist.send_command()  # Send command
+                                self.slist.set_position(msg)
 
                         fpsfilt, warr_fps = py_sos_iir(fps, warr_fps, lpf_fps_sos[0])
                         print(fpsfilt)
