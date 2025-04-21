@@ -62,32 +62,30 @@ class SerialDisplayer:
 
         client = AHSerialClient()
         self.slist.append(client)
-        print("connected!")
         client = AHSerialClient()
         self.slist.append(client)
-        print("connected!")
 
-        for p in com_ports_list:
-            if(p):
-                port.append(p)
-                print("Found: ", p)
+        # for p in com_ports_list:
+        #     if(p):
+        #         port.append(p)
+        #         print("Found: ", p)
 
-        if not port:
-            print("no port found")
+        # if not port:
+        #     print("no port found")
 
-        for p in port:
-            try:
-                # TODO: IR sensor input listeners 
-                if not self.no_input and ( (not self.CP210x_only) or (self.CP210x_only == True and (p[1].find('CP210') != -1) ) ):
-                    print("connecting input handler...")
-                    self.input_listener = (serial.Serial(p[0], '460800', timeout=1))
-                    print("connected input handler: ", p)
+        # for p in port:
+        #     try:
+        #         # TODO: IR sensor input listeners 
+        #         if not self.no_input and ( (not self.CP210x_only) or (self.CP210x_only == True and (p[1].find('CP210') != -1) ) ):
+        #             print("connecting input handler...")
+        #             self.input_listener = (serial.Serial(p[0], '460800', timeout=1))
+        #             print("connected input handler: ", p)
 
-            except Exception:
-                print("Failed to connect. here's traceback: ")
-                print(traceback.format_exc)
+        #     except Exception:
+        #         print("Failed to connect. here's traceback: ")
+        #         print(traceback.format_exc)
 
-        print("found ", len(self.slist), " ports")
+        # print("found ", len(self.slist), " ports")
 
         if not (len(self.slist) > 0 and len(self.slist) <= 2): # check number of available hands
             raise RuntimeError("no serial ports connected")
@@ -95,13 +93,13 @@ class SerialDisplayer:
             self.n = len(self.slist)
 
 
-        if not self.input_listener:
-            print("warning: no input handler found")
-            # raise RuntimeError("No switch found. Cannot launch program")
-        else:
-            ir_port = self.input_listener.port
-            self.input_listener.close()
-            self.input_listener = serial.Serial(ir_port,'500000', timeout=1)
+        # if not self.input_listener:
+        #     print("warning: no input handler found")
+        #     # raise RuntimeError("No switch found. Cannot launch program")
+        # else:
+        #     ir_port = self.input_listener.port
+        #     self.input_listener.close()
+        #     self.input_listener = serial.Serial(ir_port,'500000', timeout=1)
             
         
 
