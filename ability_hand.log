@@ -1,0 +1,8 @@
+2025-04-28 12:35:54,051 - INFO - Connected to: COM14 with baudrate: 460800 confirmed with msg b'\x00~\xa2\x94\x19\xfd\xff\xa4\x19\xf4\xff\xb0\x19\xf2\xff\xbc\x19\xef\xff1"\x06\x00o\xe6\xf1\xff;\x00\x0b\x00\x01\x00\x02\x00\xa0\x00\x02\x00 \xdf~\x00'
+2025-04-28 12:35:54,052 - INFO - Starting Read Thread
+2025-04-28 12:35:54,053 - INFO - Write Thread not created
+2025-04-28 12:35:59,227 - INFO - Stopping Read Thread
+2025-04-28 12:37:15,714 - INFO - Connected to: COM14 with baudrate: 460800 confirmed with msg b'\x00~\xa2\xbb\x19\x01\x00\xa7\x19\xf7\xff\xae\x19\xf2\xff\xbc\x19\xee\xff0"\x07\x00o\xe6\xf0\xff\xb4\xff\t\x00p\x00\x06\x003\x00\x03\x00 4~\x00'
+2025-04-28 12:37:15,718 - INFO - Starting Read Thread
+2025-04-28 12:37:15,719 - INFO - Write Thread not created
+2025-04-28 12:37:17,063 - INFO - Stopping Read Thread
