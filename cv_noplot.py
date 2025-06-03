@@ -205,10 +205,10 @@ if __name__ == "__main__":
 						#Point should be just in front of the palm. Compensated for handedness
 						static_point_b = np.array([4.16, 1.05, -1.47*abhlist[idx].handed_sign, 1])*abhlist[idx].scale			
 						static_point_b[3] = 1	#remove scaling that was applied to the immutable '1'
-						neutral_thumb_w = abhlist[idx].hw_b.dot(static_point_b)	#get dot position in world coordinates for a visual tag/reference				
+						ref_point_w = abhlist[idx].hw_b.dot(static_point_b)	#get dot position in world coordinates for a visual tag/reference				
 						l_list = landmark_pb2.NormalizedLandmarkList(
 							landmark = [
-								v4_to_landmark(neutral_thumb_w)
+								v4_to_landmark(ref_point_w)
 							]
 						)
 						mp_drawing.draw_landmarks(
@@ -217,7 +217,24 @@ if __name__ == "__main__":
 							[],
 							mp_drawing_styles.get_default_hand_landmarks_style(),
 							mp_drawing_styles.get_default_hand_connections_style())
-				
+
+						x_b = np.array([1,0,0,1])
+						y_b = np.array([0,1,0,1])
+						z_b = np.array([0,0,1,1])
+						o_b = np.array([0,0,0,1])
+
+						x_w = abhlist[idx].hw_b.dot(x_b)
+						y_w = abhlist[idx].hw_b.dot(y_b)
+						z_w = abhlist[idx].hw_b.dot(z_b)
+						o_w = abhlist[idx].hw_b.dot(o_b)
+
+						# l_list = landmark_pb2.NormalizedLandmarkList(
+						# 	landmark = [
+						# 		v4_to_landmark(x_w)
+						# 	]
+						# )
+
+						
 						t_seconds = ts/cv2.getTickFrequency()
 						if(t_seconds > send_upsampling_msg_ts):
 							send_upsampling_msg_ts = t_seconds + 10
