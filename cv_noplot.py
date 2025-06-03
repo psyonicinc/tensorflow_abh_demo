@@ -218,15 +218,33 @@ if __name__ == "__main__":
 							mp_drawing_styles.get_default_hand_landmarks_style(),
 							mp_drawing_styles.get_default_hand_connections_style())
 
-						x_b = np.array([1,0,0,1])
-						y_b = np.array([0,1,0,1])
-						z_b = np.array([0,0,1,1])
+						x_b = np.array([.1,0,0,1])
+						y_b = np.array([0,.1,0,1])
+						z_b = np.array([0,0,.1,1])
 						o_b = np.array([0,0,0,1])
 
-						x_w = abhlist[idx].hw_b.dot(x_b)
-						y_w = abhlist[idx].hw_b.dot(y_b)
-						z_w = abhlist[idx].hw_b.dot(z_b)
-						o_w = abhlist[idx].hw_b.dot(o_b)
+						o_w_fixed = np.array([0.15,0.15,0,1])
+						o_w = abhlist[idx].hw_b.dot(o_b) 
+						x_w = (abhlist[idx].hw_b.dot(x_b) - o_w)  + o_w_fixed
+						y_w = (abhlist[idx].hw_b.dot(y_b) - o_w) + o_w_fixed
+						z_w = (abhlist[idx].hw_b.dot(z_b) - o_w) + o_w_fixed
+						o_w = o_w_fixed
+						
+
+						# Convert world coordinates to pixel coordinates
+						h, w = image.shape[:2]
+						o_pixel = (int(o_w[0] * w), int(o_w[1] * h))
+						x_pixel = (int(x_w[0] * w), int(x_w[1] * h)) 
+						y_pixel = (int(y_w[0] * w), int(y_w[1] * h))
+						z_pixel = (int(z_w[0] * w), int(z_w[1] * h))
+
+						# Draw colored axis lines
+						cv2.line(image, o_pixel, x_pixel, (0, 0, 255), 2)  # Red for X axis
+						cv2.line(image, o_pixel, y_pixel, (0, 255, 0), 2)  # Green for Y axis
+						cv2.line(image, o_pixel, z_pixel, (255, 0, 0), 2)  # Blue for Z axis
+
+
+
 
 						# l_list = landmark_pb2.NormalizedLandmarkList(
 						# 	landmark = [
