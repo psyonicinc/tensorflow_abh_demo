@@ -4,10 +4,8 @@ from abh_api_core import *
 import math
 import time
 import numpy as np
-from PPP_stuffing import *
-import binascii
 
-#ser = serial.Serial('COM4','460800', timeout = 1)
+# ser = serial.Serial('COM4','460800', timeout = 1)
 """ 
 	Find a serial com port.
 """
@@ -26,10 +24,9 @@ if not port:
 for p in port:
 	try:
 		ser = []
-		ser = (serial.Serial(p[0],'460800', timeout = 0))
+		ser = (serial.Serial(p[0],'460800', timeout = 1))
 		slist.append(ser)
 		print ("connected!", p)
-		# print ("found: ", p)
 	except:
 		print("failded.")
 		pass
@@ -44,41 +41,31 @@ for s in slist:
 
 fpos = [15., 15., 15., 15., 15., -15.]																									
 try:
-	rPos = np.array([])
-	rI = np.array([])
-	rV = np.array([])
-	rFSR = np.array([])
-	
-	stuff_buffer = np.array([])
 	while 1:
 		
+		try:
+			for i in range(0, len(fpos)):
+				ft = time.time()*3 + i*(2*np.pi)/12
+				fpos[i] = (.5*math.sin(ft)+.5)*45+15
+			fpos[5] = -fpos[5]
+			
+			msg = farr_to_barr(0x50, fpos)
+			slist[0].write(msg)
+		except:
+			pass
 		
-		for i in range(0, len(fpos)):
-			ft = time.time()*3 + i*(2*np.pi)/12
-			fpos[i] = (.5*math.sin(ft)+.5)*45+15
-		fpos[5] = -fpos[5]
-		
-		msg = farr_to_dposition(0x50, fpos, 1)
-		slist[0].write(msg)
-
-		time.sleep(.001)	#this is necessary because the hand needs IDLE time before issuing a reply
-		
-		while(slist[0].in_waiting != 0):	#dump all the data
-			bytes = slist[0].read(1024)	#gigantic read size with nonblocking
-			if(len(bytes) != 0): #redundant, but fine to keep
-				npbytes = np.frombuffer(bytes, np.uint8)
-				for b in npbytes:
-					payload, stuff_buffer = unstuff_PPP_stream(b,stuff_buffer)
-					if(len(payload) != 0):
-						rPos,rI,rV,rFSR = parse_hand_data(payload)
-						print(str(np.int16(rPos))+str(rI)+str(np.int16(rV))+str(rFSR))
-
-						if( (rPos.size + rI.size + rV.size + rFSR.size) == 0):
-							print("error parsing hand reply")							
-						#Optional: Dump any remaining data
-						# while(slist[0].in_waiting != 0):	
-							# bytes = slist[0].read(1024)
-
+		try:		
+			for i in range(0, len(fpos)):
+				ft = time.time()*3 + (i+6)*(2*np.pi)/12
+				fpos[i] = (.5*math.sin(ft)+.5)*45+15
+			fpos[5] = -fpos[5]
+			
+			msg = farr_to_barr(0x50, fpos)
+			slist[1].write(msg)
+		except:
+			pass
+	
+		time.sleep(.001)
 		
 		
 except KeyboardInterrupt:

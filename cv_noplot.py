@@ -1,3 +1,6 @@
+
+ 
+
 import cv2
 import mediapipe as mp
 import time
@@ -20,8 +23,6 @@ if __name__ == "__main__":
 	parser.add_argument('--do_grip_cmds' , help="Include flag for using grip commands for grip recognitions", action='store_true')
 	parser.add_argument('--CP210x_only', help="for aadeel's bad computer", action='store_true')
 	parser.add_argument('--camera_capture', type=int, help="opencv capture number", default=0)
-	parser.add_argument('--flip_hands', help="set for flipping hands", action='store_true')
-	parser.add_argument('--show_fps', help="set to print obtained fps to stdout",action='store_true')
 	args = parser.parse_args()
 	
 	use_grip_cmds = args.do_grip_cmds
@@ -49,7 +50,7 @@ if __name__ == "__main__":
 	for p in port:
 		try:
 			ser = []
-			if( (args.CP210x_only == False) or  (args.CP210x_only == True and (p[1].find('CP210x') != -1) or p[1].find('USB Serial Port') != -1) ):
+			if( (args.CP210x_only == False) or  (args.CP210x_only == True and p[1].find('CP210x') != -1) ):
 				ser = (serial.Serial(p[0],'460800', timeout = 1))
 				slist.append(ser)
 				print ("connected!", p)
@@ -112,13 +113,6 @@ if __name__ == "__main__":
 				abh = AbilityHandBridge()
 				abhlist.append(abh)
 
-			flip_hands = False
-			if(args.flip_hands == True):
-				tmp = slist[0]
-				slist[0] = slist[1]
-				slist[1] = tmp
-				flip_hands = True
-			
 			send_upsampling_msg_ts = 0
 			while cap.isOpened():
 			
@@ -158,8 +152,7 @@ if __name__ == "__main__":
 						ser_idx = results.multi_handedness[idx].classification[0].index
 						if(n == 1):
 							ser_idx = 0		#default to 0 if there's only one device connected
-
-
+						
 						#fpos, warr, hw_b, hb_w, handed_sign, scale, dist_to_thumb = get_fpos(results, mp_hands, fpos, warr)
 						abhlist[idx].update(mp_hands, results.multi_hand_landmarks[idx].landmark, results.multi_handedness[idx].classification[0].index)
 						#if port:
@@ -212,35 +205,43 @@ if __name__ == "__main__":
 							mp_drawing_styles.get_default_hand_landmarks_style(),
 							mp_drawing_styles.get_default_hand_connections_style())
 				
-						t_seconds = ts/cv2.getTickFrequency()
-						if(t_seconds > send_upsampling_msg_ts):
-							send_upsampling_msg_ts = t_seconds + 10
-							for i in range(0,n):
-								msg = create_misc_msg(0x50, 0xC2)
-								print("sending: ", [ hex(b) for b in msg ], "to ser device ", i)
-								slist[i].write(msg)
-
-
-
+					
 				# Flip the image horizontally for a selfie-view display.
-				cv2.namedWindow('MediaPipe Hands', cv2.WINDOW_FREERATIO)
-				cv2.setWindowProperty('MediaPipe Hands',  cv2.WND_PROP_ASPECT_RATIO, cv2.WINDOW_FREERATIO)
-				cv2.imshow('MediaPipe Hands', cv2.flip(image, 1))
+				cv2.namedWindow('MediaPipe Hands', cv2.WINDOW_NORMAL)
+				cv2.setWindowProperty('MediaPipe Hands',  cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
 
-				key = cv2.waitKey(1)
-				if key & 0xFF == 27:
+				(x, y, windowWidth, windowHeight) = cv2.getWindowImageRect('MediaPipe Hands')
+				
+				ydiv = np.floor(windowHeight/image.shape[0])
+				xdiv = np.floor(windowWidth/image.shape[1])
+				uniform_mult = np.max([1,np.min([xdiv,ydiv])])
+
+				
+				yrem = (windowHeight - image.shape[0]*uniform_mult)
+				xrem = (windowWidth - image.shape[1]*uniform_mult)
+				top = int(np.max([0, yrem/2]))
+				bottom = top
+				left = int(np.max([0,xrem/2]))
+				right = left
+				imgresized = cv2.resize(image, (int(image.shape[1]*uniform_mult),int(image.shape[0]*uniform_mult)), interpolation=cv2.INTER_AREA)
+				dst = cv2.copyMakeBorder(imgresized,top,bottom,left,right, cv2.BORDER_CONSTANT, None, value = 0)
+				cv2.imshow('MediaPipe Hands', cv2.flip(dst, 1))
+
+				key = cv2.waitKey(1) & 0xFF 
+				if key == ord('q'):
 					break
-				elif key & 0xFF == 102:	#f
-					flip_hands = (not flip_hands)
-					if (n == 2):
-						tmp = slist[0]
-						slist[0] = slist[1]
-						slist[1] = tmp
-					print("flip status: "+str(flip_hands))
-
-				if(args.show_fps == True):
-					fpsfilt, warr_fps = py_sos_iir(fps, warr_fps, lpf_fps_sos[0])
-					print (fpsfilt)
+				
+				t_seconds = ts/cv2.getTickFrequency()
+				if(t_seconds > send_upsampling_msg_ts):
+					send_upsampling_msg_ts = t_seconds + 10
+					for i in range(0,n):
+						msg = create_misc_msg(0x50, 0xC2)
+						print("sending: ", [ hex(b) for b in msg ], "to ser device ", i)
+						slist[i].write(msg)
+				
+				
+				fpsfilt, warr_fps = py_sos_iir(fps, warr_fps, lpf_fps_sos[0])
+				print (fpsfilt)
 
 		cap.release()
 		for s in slist:

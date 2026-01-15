@@ -1,0 +1,10 @@
+2025-06-27 12:10:13,017 - WARNING - Recieved None when trying to connect
+2025-09-24 14:41:58,031 - INFO - [Errno 13] could not open port /dev/ttyUSB1: [Errno 13] Permission denied: '/dev/ttyUSB1'
+2025-09-24 14:41:58,032 - INFO - [Errno 13] could not open port /dev/ttyUSB0: [Errno 13] Permission denied: '/dev/ttyUSB0'
+2025-09-24 14:41:58,032 - WARNING - Recieved None when trying to connect
+2025-09-24 14:45:38,843 - INFO - [Errno 13] could not open port /dev/ttyUSB1: [Errno 13] Permission denied: '/dev/ttyUSB1'
+2025-09-24 14:45:38,843 - INFO - [Errno 13] could not open port /dev/ttyUSB0: [Errno 13] Permission denied: '/dev/ttyUSB0'
+2025-09-24 14:45:38,957 - WARNING - Recieved None when trying to connect
+2025-09-24 14:48:53,489 - INFO - [Errno 13] could not open port /dev/ttyUSB1: [Errno 13] Permission denied: '/dev/ttyUSB1'
+2025-09-24 14:48:53,489 - INFO - [Errno 13] could not open port /dev/ttyUSB0: [Errno 13] Permission denied: '/dev/ttyUSB0'
+2025-09-24 14:48:53,600 - WARNING - Recieved None when trying to connect
